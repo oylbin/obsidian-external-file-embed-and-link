@@ -51,18 +51,35 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.insertText(editor, text);
 	}
 
+	private getActionFromEventKeys(event: DragEvent): 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault' {
+		const platform = process.platform;
+		console.log(`platform: ${platform}, shift: ${event.shiftKey}, ctrl: ${event.ctrlKey}, alt: ${event.altKey}, meta: ${event.metaKey}`);
+		if(platform === 'darwin'){
+			if(event.altKey && event.shiftKey){
+				return this.settings.dragWithCtrlShift;
+			}else if(event.shiftKey){
+				return this.settings.dragWithShift;
+			}else if(event.altKey){
+				return this.settings.dragWithCtrl;
+			}else{
+				return 'default';
+			}
+		}else{
+			if(event.ctrlKey && event.shiftKey){
+				return this.settings.dragWithCtrlShift;
+			}else if(event.shiftKey){
+				return this.settings.dragWithShift;
+			}else if(event.ctrlKey){
+				return this.settings.dragWithCtrl;
+			}else{
+				return 'default';
+			}
+		}
+		return 'default';
+	}
 	private handleDragEvent(event: DragEvent, editor: Editor) {
 		console.log("drop", event);
-		let action: 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault';
-		if(event.ctrlKey && event.shiftKey){
-			action = this.settings.dragWithCtrlShift;
-		}else if(event.shiftKey){
-			action = this.settings.dragWithShift;
-		}else if(event.ctrlKey){
-			action = this.settings.dragWithCtrl;
-		}else{
-			return;
-		}
+		const action = this.getActionFromEventKeys(event);
 		if(action === 'default'){
 			return;
 		}

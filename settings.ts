@@ -27,57 +27,52 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
-
 		containerEl.empty();
 
-		new Setting(containerEl)
-		.setName('Drag with Ctrl')
-		.setDesc('Choose the type of embed or link to create when dragging with Ctrl')
-		.addDropdown(dropdown => dropdown
-			.addOption('default', 'Obsidian default action')
-			.addOption('LinkRelativeToHome', 'LinkRelativeToHome')
-			.addOption('LinkRelativeToVault', 'LinkRelativeToVault')
-			.addOption('EmbedRelativeToHome', 'EmbedRelativeToHome')
-			.addOption('EmbedRelativeToVault', 'EmbedRelativeToVault')
-			.addOption('InlineLinkRelativeToHome', 'InlineLinkRelativeToHome')
-			.addOption('InlineLinkRelativeToVault', 'InlineLinkRelativeToVault')
-			.setValue(this.plugin.settings.dragWithCtrl || 'default')
-			.onChange(async (value) => {
-				this.plugin.settings.dragWithCtrl = value as 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault';
-				await this.plugin.saveSettings();
-			}));
-		new Setting(containerEl)
-			.setName('Drag with Shift')
-			.setDesc('Choose the type of embed or link to create when dragging with Shift')
-			.addDropdown(dropdown => dropdown
-				.addOption('default', 'Obsidian default action')
-				.addOption('LinkRelativeToHome', 'LinkRelativeToHome')
-				.addOption('LinkRelativeToVault', 'LinkRelativeToVault')
-				.addOption('EmbedRelativeToHome', 'EmbedRelativeToHome')
-				.addOption('EmbedRelativeToVault', 'EmbedRelativeToVault')
-				.addOption('InlineLinkRelativeToHome', 'InlineLinkRelativeToHome')
-				.addOption('InlineLinkRelativeToVault', 'InlineLinkRelativeToVault')
-				.setValue(this.plugin.settings.dragWithShift || 'LinkRelativeToHome')
-				.onChange(async (value) => {
-					this.plugin.settings.dragWithShift = value as 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault';
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName('Drag with Ctrl+Shift')
-			.setDesc('Choose the type of embed or link to create when dragging with Ctrl+Shift')
-			.addDropdown(dropdown => dropdown
-				.addOption('default', 'Obsidian default action')
-				.addOption('LinkRelativeToHome', 'LinkRelativeToHome')
-				.addOption('LinkRelativeToVault', 'LinkRelativeToVault')
-				.addOption('EmbedRelativeToHome', 'EmbedRelativeToHome')
-				.addOption('EmbedRelativeToVault', 'EmbedRelativeToVault')
-				.addOption('InlineLinkRelativeToHome', 'InlineLinkRelativeToHome')
-				.addOption('InlineLinkRelativeToVault', 'InlineLinkRelativeToVault')
-				.setValue(this.plugin.settings.dragWithCtrlShift || 'EmbedRelativeToHome')
-				.onChange(async (value) => {
-					this.plugin.settings.dragWithCtrlShift = value as 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault';
-					await this.plugin.saveSettings();
-				}));
+		const createSetting = (name: string, desc: string, value: string, onchangeFn: (value: string) => void) => {
+			new Setting(containerEl)
+				.setName(name)
+				.setDesc(desc)
+				.addDropdown(dropdown => dropdown
+					.addOption('default', 'Obsidian default action')
+					.addOption('LinkRelativeToHome', 'LinkRelativeToHome')
+					.addOption('LinkRelativeToVault', 'LinkRelativeToVault')
+					.addOption('EmbedRelativeToHome', 'EmbedRelativeToHome')
+					.addOption('EmbedRelativeToVault', 'EmbedRelativeToVault')
+					.addOption('InlineLinkRelativeToHome', 'InlineLinkRelativeToHome')
+					.addOption('InlineLinkRelativeToVault', 'InlineLinkRelativeToVault')
+					.setValue(value)
+					.onChange(async (value) => {
+						onchangeFn(value);
+					}));
+		};
 
+		let ctrlKeyName = 'Ctrl';
+		const platform = process.platform;
+		if(platform === 'darwin'){
+			ctrlKeyName = 'Option';
+		}
+
+		createSetting(`Drag with ${ctrlKeyName}`, 
+			`Choose the type of embed or link to create when dragging with ${ctrlKeyName}`, 
+			this.plugin.settings.dragWithCtrl,
+			(value) => {
+				this.plugin.settings.dragWithCtrl = value as any;
+				this.plugin.saveSettings();
+			});
+		createSetting(`Drag with Shift`, 
+			`Choose the type of embed or link to create when dragging with Shift`, 
+			this.plugin.settings.dragWithShift,
+			(value) => {
+				this.plugin.settings.dragWithShift = value as any;
+				this.plugin.saveSettings();
+			});
+		createSetting(`Drag with ${ctrlKeyName}+Shift`, 
+			`Choose the type of embed or link to create when dragging with ${ctrlKeyName}+Shift`, 
+			this.plugin.settings.dragWithCtrlShift,
+			(value) => {
+				this.plugin.settings.dragWithCtrlShift = value as any;
+				this.plugin.saveSettings();
+			});
 	}
 }
