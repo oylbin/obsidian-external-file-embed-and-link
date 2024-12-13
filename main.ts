@@ -288,26 +288,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 	}
 
-	private embedPdf(fileUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
-
-		const container = document.createElement("div");
-		container.classList.add("pdf-container");
-		// Add <canvas> element
-		const canvas = document.createElement("canvas");
-		canvas.id = "pdf-canvas";
-		container.appendChild(canvas);
-
-		// Insert container into rendering area
-		element.appendChild(container);
-		this.loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js")
-			.then(() => {
-				// console.log("PDF.js loaded!");
-				this.renderPdf(fileUrl, canvas);
-			})
-			.catch((error) => {
-			console.error("Failed to load PDF.js:", error);
-		});
-	}
 	private embedPdfWithIframe(embedUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		const iframe = document.createElement("iframe");
 		// console.log("embedUrl", embedUrl);
@@ -504,50 +484,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-	// Tool function to dynamically load external scripts
-	private loadExternalScript(url: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const script = document.createElement("script");
-			script.src = url;
-			script.type = "text/javascript";
-			script.onload = () => resolve();
-			script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
-			document.head.appendChild(script);
-		});
-	}
-	// Render PDF to canvas
-	private async renderPdf(url: string, canvas: HTMLCanvasElement) {
-		const ctx = canvas.getContext("2d");
 
-		// Check if PDF.js is successfully loaded
-		if (!(window as any)["pdfjsLib"]) {
-			console.error("PDF.js library not loaded.");
-			return;
-		}
-
-		const pdfjsLib = (window as any)["pdfjsLib"];
-		pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
-
-		// Get PDF document
-		try {
-			const pdf = await pdfjsLib.getDocument(url).promise;
-			const page = await pdf.getPage(1); // Render first page
-
-			// Set viewport and canvas size
-			const viewport = page.getViewport({ scale: 1.5 });
-			canvas.width = viewport.width;
-			canvas.height = viewport.height;
-
-			// Render PDF page to canvas
-			const renderContext = {
-				canvasContext: ctx,
-				viewport: viewport,
-			};
-			await page.render(renderContext).promise;
-		} catch (error) {
-			console.error("Failed to render PDF:", error);
-		}
-	}
+	
 
 	private async showFilePickerAndCreateEmbed(
 		editor: Editor, 

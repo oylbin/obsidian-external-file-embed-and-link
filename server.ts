@@ -130,34 +130,6 @@ const PDF_HTML_TEMPLATE = `
 </body>
 </html>`
 
-const VIDEO_HTML_TEMPLATE = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Video Player</title>
-</head>
-<body>
-<video controls width="640" height="360">
-    <source src="URL_TO_REPLACE" type="VIDEO_TYPE_TO_REPLACE">
-    Your browser does not support video playback, please try using another browser.
-</video>
-</body>
-</html>
-`
-const AUDIO_HTML_TEMPLATE = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Audio Player</title>
-</head>
-<body>
-<audio controls>
-    <source src="URL_TO_REPLACE" type="AUDIO_TYPE_TO_REPLACE">
-    Your browser does not support audio playback, please try using another browser.
-</audio>
-</body>
-</html>
-`
 
 const UNSUPPORTED_FILE_TEMPLATE = `
 <html>
@@ -173,10 +145,6 @@ export function getTemplate(extname: string) {
 	extname = extname.toLowerCase();
 	const _map: { [key: string]: string } = {
 		'.pdf': PDF_HTML_TEMPLATE,
-		'.mp3': AUDIO_HTML_TEMPLATE.replace("AUDIO_TYPE_TO_REPLACE", "audio/mpeg"),
-		'.mp4': VIDEO_HTML_TEMPLATE.replace("VIDEO_TYPE_TO_REPLACE", "video/mp4"),
-		'.webm': VIDEO_HTML_TEMPLATE.replace("VIDEO_TYPE_TO_REPLACE", "video/webm"),
-		'.ogg': AUDIO_HTML_TEMPLATE.replace("AUDIO_TYPE_TO_REPLACE", "audio/ogg"),
 	};
 	if (_map[extname]) {
 		return _map[extname];
