@@ -1,94 +1,111 @@
-# Obsidian Sample Plugin
+# Obsidian External File Embed and Link
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Embed and link local files outside your obsidian vault with relative paths for cross-device and multi-platform compatibility.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+1. Embed external files (PDF, Images, Audio, Video) outside your obsidian vault. (Markdown file embedding is under development)
+2. Create links to files outside your obsidian vault that open with system default applications
+3. Reference files using paths relative to Home directory or Vault directory for cross-device and cross-platform compatibility
+4. Provide commands to add embeds or links via file picker
+5. Support drag & drop to create embeds or links
 
-## First time developing plugins?
+## Detailed Usage
 
-Quick starting guide for new plugin devs:
+### Embedding External Files
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+You can embed files using paths relative to your Home directory. For example, if your Home path is `C:\Users\username`, you can embed a PDF file from `C:\Users\username\SynologyDrive\work\Document.pdf` like this:
 
-## Releasing new releases
-
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+~~~markdown
+```EmbedRelativeToHome
+SynologyDrive/work/Document.pdf
 ```
+~~~
 
-If you have multiple URLs, you can also do:
+This will be rendered in Live Preview and Reading Mode as:
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+![PDF Example](docs/assets/pdf-example.png)
+
+If your Obsidian vault is located at `C:\Users\username\SynologyDrive\obsidian`, you can embed the same file using a path relative to your vault:
+
+~~~markdown
+```EmbedRelativeToVault
+../work/Document.pdf
 ```
+~~~
 
-## API Documentation
+Using relative paths ensures compatibility across different computers and operating systems, especially useful when syncing files with services like SynologyDrive.
 
-See https://github.com/obsidianmd/obsidian-api
+### Supported File Types for Embedding
+
+- **Images**: `.avif`, `.bmp`, `.gif`, `.jpeg`, `.jpg`, `.png`, `.svg`, `.webp`
+- **Audio**: `.flac`, `.m4a`, `.mp3`, `.ogg`, `.wav`, `.webm`, `.3gp`
+- **Video**: `.mkv`, `.mov`, `.mp4`, `.ogv`, `.webm`
+- **PDF**: `.pdf`
+
+### Embedding Options
+
+Following Obsidian's [Embed files](https://help.obsidian.md/Linking+notes+and+files/Embed+files) documentation, this plugin supports parameters for controlling display behavior:
+
+#### PDF Files
+Add parameters after `#` to control page number, width, and height:
+
+~~~markdown
+```EmbedRelativeToHome
+SynologyDrive/work/Document.pdf#page=3&width=100%&height=80vh
+```
+~~~
+
+#### Images & Videos
+Add dimensions after `|` to control size:
+
+~~~markdown
+```EmbedRelativeToHome
+Downloads/test.png|400
+```
+~~~
+
+~~~markdown
+```EmbedRelativeToHome
+Videos/test.mp4|800x600
+```
+~~~
+
+### External File Links
+
+If you don't need to render the file content in Reading Mode, you can create links to external files:
+
+~~~markdown
+This is a pdf file outside of the vault:
+```LinkRelativeToHome
+Downloads/sample.pdf
+```
+~~~
+
+This will be rendered as:
+
+![External Link Example](docs/assets/external-link-example.png)
+
+For inline links within paragraphs, use:
+
+~~~markdown
+This is a <a class=LinkRelativeToHome>Downloads/sample.pdf</a> outside of the vault.
+~~~
+
+Which renders as:
+
+![Inline Link Example](docs/assets/inline-link-example.png)
+
+### Adding Embeds or Links
+
+#### Using Commands
+Type "external" in the command palette to see available options:
+
+![commands](docs/assets/commands.png)
+
+#### Using Drag & Drop
+Create embeds or links by holding modifier keys (`ctrl`, `shift`, `ctrl+shift`) while dragging files. 
+
+Modifier keys can be customized in the plugin settings:
+
+![settings](docs/assets/settings.png)
