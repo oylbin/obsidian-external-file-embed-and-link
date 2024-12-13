@@ -214,11 +214,11 @@ export function findAvailablePort(startPort: number): Promise<number> {
 
 
 function getFilePathFromUrl(url: string, homeDirectory: string, vaultDirectory: string) {
-	console.log("getFilePathFromUrl", url);
+	// console.log("getFilePathFromUrl", url);
 	const [urlWithoutParams, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
-	console.log("urlWithoutParams", urlWithoutParams);
-	console.log("parsedParams", parsedParams);
+	// console.log("urlWithoutParams", urlWithoutParams);
+	// console.log("parsedParams", parsedParams);
 	if(urlWithoutParams.startsWith("/download/home") || urlWithoutParams.startsWith("/open/home") || urlWithoutParams.startsWith("/embed/home")) {
 		const decodedPath = decodeURIComponent(parsedParams.p);
 		const filePath = path.join(homeDirectory, decodedPath);
@@ -319,7 +319,7 @@ export function downloadRequestHandler(url: string, req: http.IncomingMessage, r
 }
 function openRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, homeDirectory: string, vaultDirectory: string) {
 	const filePath = getFilePathFromUrl(url, homeDirectory, vaultDirectory);
-	console.log("filePath", filePath);
+	// console.log("filePath", filePath);
 	openFileWithDefaultProgram(filePath, (error: Error) => {
 		if(error){
 			console.error("Failed to open file:", error);
@@ -343,7 +343,7 @@ function openRequestHandler(url: string, req: http.IncomingMessage, res: http.Se
 	res.end(multiLineStr);
 }
 export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerResponse, homeDirectory: string, vaultDirectory: string) {
-	console.log("httpRequestHandler", req.url);
+	// console.log("httpRequestHandler", req.url);
 	// Read file content and return it via http response
 	const url = req.url;
 	if(!url) {

@@ -56,13 +56,13 @@ export function parseEmbedArgumentWidthHeight(embedArguments: string): EmbedArgu
 }
 
 export function parseEmbedData(inputLine: string): EmbedData {
-	console.log("embed input: ", inputLine);
+	// console.log("embed input: ", inputLine);
 	inputLine = inputLine.trim();
 	if (inputLine.startsWith("/")) {
 		inputLine = inputLine.substring(1);
 	}
 	const lowerCaseNameWithArguments = path.basename(inputLine).toLowerCase();
-	console.log("lowerCaseNameWithArguments: ", lowerCaseNameWithArguments);
+	// console.log("lowerCaseNameWithArguments: ", lowerCaseNameWithArguments);
 
 	/*
 	refer to https://help.obsidian.md/Linking+notes+and+files/Embed+files

@@ -1,11 +1,11 @@
 {
 	"id": "external-file-embed-and-link",
 	"name": "External File Embed and Link",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "0.15.0",
 	"description": "Embed and link local files outside your obsidian vault with relative paths for cross-device and multi-platform compatibility.",
 	"author": "oylbin",
 	"authorUrl": "https://github.com/oylbin",
-	"fundingUrl": "https://github.com/oylbin/obsidian-external-file-embed-and-link",
+	"fundingUrl": "https://buymeacoffee.com/oylbin",
 	"isDesktopOnly": true
 }

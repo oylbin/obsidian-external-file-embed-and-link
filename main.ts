@@ -53,7 +53,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 	private getActionFromEventKeys(event: DragEvent): 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault' {
 		const platform = process.platform;
-		console.log(`platform: ${platform}, shift: ${event.shiftKey}, ctrl: ${event.ctrlKey}, alt: ${event.altKey}, meta: ${event.metaKey}`);
+		// console.log(`platform: ${platform}, shift: ${event.shiftKey}, ctrl: ${event.ctrlKey}, alt: ${event.altKey}, meta: ${event.metaKey}`);
 		if(platform === 'darwin'){
 			if(event.altKey && event.shiftKey){
 				return this.settings.dragWithCtrlShift;
@@ -78,7 +78,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		return 'default';
 	}
 	private handleDragEvent(event: DragEvent, editor: Editor) {
-		console.log("drop", event);
+		// console.log("drop", event);
 		const action = this.getActionFromEventKeys(event);
 		if(action === 'default'){
 			return;
@@ -152,8 +152,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.homeDirectory = process.env.HOME || process.env.USERPROFILE || '';
 		// @ts-ignore Property 'basePath' exists at runtime but is not typed
 		this.vaultDirectory = this.app.vault.adapter.basePath;
-		console.log("vaultDirectory", this.vaultDirectory);
-		console.log("homeDirectory", this.homeDirectory);
+		// console.log("vaultDirectory", this.vaultDirectory);
+		// console.log("homeDirectory", this.homeDirectory);
 
 		// console.log("home relative to vault", this.filePathRelativeToVault(this.homeDirectory));
 		// console.log("vault relative to home", this.filePathRelativeToHome(this.vaultDirectory));
@@ -250,11 +250,11 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				if (activeView) {
 					const dropHandler = (event: DragEvent) => {
-						console.log("drop", event);
+						// console.log("drop", event);
 						if(this.settings.enableDragAndDrop){ // always enabled now
 							this.handleDragEvent(event, activeView.editor);
 						} else {
-							console.log("drag and drop is disabled");
+							// console.log("drag and drop is disabled");
 						}
 					};
 
@@ -301,7 +301,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		element.appendChild(container);
 		this.loadExternalScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js")
 			.then(() => {
-				console.log("PDF.js loaded!");
+				// console.log("PDF.js loaded!");
 				this.renderPdf(fileUrl, canvas);
 			})
 			.catch((error) => {
@@ -310,8 +310,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	}
 	private embedPdfWithIframe(embedUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		const iframe = document.createElement("iframe");
-		console.log("embedUrl", embedUrl);
-		console.log("embedArguments", embedArguments);
+		// console.log("embedUrl", embedUrl);
+		// console.log("embedArguments", embedArguments);
 		const embedPdfArguments = parseEmbedPdfArguments(embedArguments);
 		if(embedPdfArguments.page){
 			iframe.src = embedUrl + "&page=" + embedPdfArguments.page;
@@ -385,7 +385,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		element: HTMLElement,
 		context: MarkdownPostProcessorContext
 	) {
-		console.log("processLinkRelativeToHome", element, context);
+		// console.log("processLinkRelativeToHome", element, context);
 		// Find elements with LinkRelativeToHome class
 		element.querySelectorAll('.LinkRelativeToHome').forEach((el) => {
 			const relativePath = el.textContent?.trim();
@@ -465,7 +465,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// When embedding markdown document, use #headeringName or #^blockID to pass parameters 
 
 		const embedData = parseEmbedData(filePath);
-		console.log("embedData", embedData);
+		// console.log("embedData", embedData);
 		// check if filename contains '|', the text after '|' is the embed arguments
 		const fileUrl = `http://127.0.0.1:${this.settings.httpServerPort}/download/${relativeTo === "home" ? "home" : "vault"}?p=${embedData.embedFilePath}`;
 		if (embedData.embedType === 'pdf') {
@@ -573,7 +573,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		if (!result.canceled && result.filePaths.length > 0) {
 			const filePaths = result.filePaths;
-			console.log("Selected files:", filePaths);
+			// console.log("Selected files:", filePaths);
 			
 			filePaths.forEach((filePath: string) => {
 				const relativePath = getRelativePath(baseDir, filePath);
