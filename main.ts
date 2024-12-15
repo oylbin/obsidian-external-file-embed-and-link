@@ -3,7 +3,7 @@ import * as http from 'http';
 import * as path from 'path';
 import { httpRequestHandler, findAvailablePort } from './server';
 import { openFileWithDefaultProgram, getRelativePath } from './utils';
-import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab } from './settings';
+import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction } from './settings';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedPdfArguments } from 'embedProcessor';
 
 
@@ -51,7 +51,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.insertText(editor, text);
 	}
 
-	private getActionFromEventKeys(event: DragEvent): 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault' {
+	private getActionFromEventKeys(event: DragEvent): DragAction {
 		// console.log(`shift: ${event.shiftKey}, ctrl: ${event.ctrlKey}, alt: ${event.altKey}, meta: ${event.metaKey}`);
 		if(Platform.isMacOS){
 			if(event.altKey && event.shiftKey){
@@ -61,7 +61,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			}else if(event.altKey){
 				return this.settings.dragWithCtrl;
 			}else{
-				return 'default';
+				return DragAction.Default;
 			}
 		}else{
 			if(event.ctrlKey && event.shiftKey){
@@ -71,14 +71,14 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			}else if(event.ctrlKey){
 				return this.settings.dragWithCtrl;
 			}else{
-				return 'default';
+				return DragAction.Default;
 			}
 		}
 	}
 	private handleDragEvent(event: DragEvent, editor: Editor) {
 		// console.log("drop", event);
 		const action = this.getActionFromEventKeys(event);
-		if(action === 'default'){
+		if(action === DragAction.Default){
 			return;
 		}
 		event.preventDefault();
@@ -91,22 +91,22 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			for (let i = 0; i < files.length; i++) {
 				// @ts-ignore Property 'path' exists at runtime but is not typed
 				const fullpath = files[i].path;	
-				if (action === "EmbedRelativeToHome") {
+				if (action === DragAction.EmbedRelativeToHome) {
 					const relativePath = getRelativePath(this.homeDirectory, fullpath);
 					this.createEmbedRelativeToHome(editor, relativePath);
-				} else if (action === "EmbedRelativeToVault") {
+				} else if (action === DragAction.EmbedRelativeToVault) {
 					const relativePath = getRelativePath(this.vaultDirectory, fullpath);
 					this.createEmbedRelativeToVault(editor, relativePath);
-				} else if (action === "LinkRelativeToHome") {
+				} else if (action === DragAction.LinkRelativeToHome) {
 					const relativePath = getRelativePath(this.homeDirectory, fullpath);
 					this.createLinkRelativeToHome(editor, relativePath);
-				} else if (action === "LinkRelativeToVault") {
+				} else if (action === DragAction.LinkRelativeToVault) {
 					const relativePath = getRelativePath(this.vaultDirectory, fullpath);
 					this.createLinkRelativeToVault(editor, relativePath);
-				}else if(action === "InlineLinkRelativeToHome"){
+				}else if(action === DragAction.InlineLinkRelativeToHome){
 					const relativePath = getRelativePath(this.homeDirectory, fullpath);
 					this.createInlineLinkRelativeToHome(editor, relativePath);
-				}else if(action === "InlineLinkRelativeToVault"){
+				}else if(action === DragAction.InlineLinkRelativeToVault){
 					const relativePath = getRelativePath(this.vaultDirectory, fullpath);
 					this.createInlineLinkRelativeToVault(editor, relativePath);
 				}
@@ -153,9 +153,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// console.log("vaultDirectory", this.vaultDirectory);
 		// console.log("homeDirectory", this.homeDirectory);
 
-		// console.log("home relative to vault", this.filePathRelativeToVault(this.homeDirectory));
-		// console.log("vault relative to home", this.filePathRelativeToHome(this.vaultDirectory));
-		// console.log("synology drive folder relative to home", this.filePathRelativeToHome("c:/Users/oylb/SynologyDrive"));
 		this.startHttpServer();
 
 		if(Platform.isMacOS || Platform.isWin){
@@ -214,30 +211,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				this.showFilePickerAndCreateEmbed(editor, this.vaultDirectory, this.createInlineLinkRelativeToVault.bind(this));
 			}
 		});
-
-		
-
-		// this.addCommand({
-		// 	id: 'paste-filename-as-external-link-embed',
-		// 	name: 'Paste filename as External Embed',
-		// 	editorCallback: (editor: Editor, view: MarkdownView) => {
-		// 		this.pasteFilenameAsExternalEmbed(editor);
-		// 	}
-		// });
-
-
-		// this.registerEvent(this.app.workspace.on("editor-menu", (menu, editor, view) => {
-		// 	menu.addItem((item) => {
-		// 		item.setTitle("Paste filename as External Link").setIcon("link").onClick(() => {
-		// 			this.pasteFilenameAsExternalLink(editor);
-		// 		});
-		// 	});
-		// 	menu.addItem((item) => {
-		// 		item.setTitle("Paste filename as External Embed").setIcon("link").onClick(() => {
-		// 			this.pasteFilenameAsExternalEmbed(editor);
-		// 		});
-		// 	});
-		// }));
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", () => {

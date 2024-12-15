@@ -1,18 +1,29 @@
 import CrossComputerLinkPlugin from 'main';
 import { App, Platform, PluginSettingTab, Setting } from 'obsidian';
+
+export enum DragAction {
+    Default = 'default',
+    LinkRelativeToHome = 'LinkRelativeToHome',
+    LinkRelativeToVault = 'LinkRelativeToVault',
+    EmbedRelativeToHome = 'EmbedRelativeToHome',
+    EmbedRelativeToVault = 'EmbedRelativeToVault',
+    InlineLinkRelativeToHome = 'InlineLinkRelativeToHome',
+    InlineLinkRelativeToVault = 'InlineLinkRelativeToVault'
+}
+
 export interface CrossComputerLinkPluginSettings {
 	httpServerPort: number;
-	dragWithCtrl: 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault';
-	dragWithShift: 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault';
-	dragWithCtrlShift: 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault';
+	dragWithCtrl: DragAction;
+	dragWithShift: DragAction;
+	dragWithCtrlShift: DragAction;
 	enableDragAndDrop: boolean;
 }
 
 export const DEFAULT_SETTINGS: CrossComputerLinkPluginSettings = {
 	httpServerPort: 11411,
-	dragWithCtrl: 'default',
-	dragWithShift: 'InlineLinkRelativeToHome',
-	dragWithCtrlShift: 'EmbedRelativeToHome',
+	dragWithCtrl: DragAction.Default,
+	dragWithShift: DragAction.InlineLinkRelativeToHome,
+	dragWithCtrlShift: DragAction.EmbedRelativeToHome,
 	enableDragAndDrop: true,
 }
 
@@ -34,13 +45,13 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 				.setName(name)
 				.setDesc(desc)
 				.addDropdown(dropdown => dropdown
-					.addOption('default', 'Obsidian default action')
-					.addOption('LinkRelativeToHome', 'LinkRelativeToHome')
-					.addOption('LinkRelativeToVault', 'LinkRelativeToVault')
-					.addOption('EmbedRelativeToHome', 'EmbedRelativeToHome')
-					.addOption('EmbedRelativeToVault', 'EmbedRelativeToVault')
-					.addOption('InlineLinkRelativeToHome', 'InlineLinkRelativeToHome')
-					.addOption('InlineLinkRelativeToVault', 'InlineLinkRelativeToVault')
+					.addOption(DragAction.Default, 'Obsidian default action')
+					.addOption(DragAction.LinkRelativeToHome, 'LinkRelativeToHome')
+					.addOption(DragAction.LinkRelativeToVault, 'LinkRelativeToVault')
+					.addOption(DragAction.EmbedRelativeToHome, 'EmbedRelativeToHome')
+					.addOption(DragAction.EmbedRelativeToVault, 'EmbedRelativeToVault')
+					.addOption(DragAction.InlineLinkRelativeToHome, 'InlineLinkRelativeToHome')
+					.addOption(DragAction.InlineLinkRelativeToVault, 'InlineLinkRelativeToVault')
 					.setValue(value)
 					.onChange(async (value) => {
 						onchangeFn(value);
@@ -56,21 +67,21 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 			`Choose the type of embed or link to create when dragging with ${ctrlKeyName}`, 
 			this.plugin.settings.dragWithCtrl,
 			(value) => {
-				this.plugin.settings.dragWithCtrl = value as any;
+				this.plugin.settings.dragWithCtrl = value as DragAction;
 				this.plugin.saveSettings();
 			});
 		createSetting(`Drag with Shift`, 
 			`Choose the type of embed or link to create when dragging with Shift`, 
 			this.plugin.settings.dragWithShift,
 			(value) => {
-				this.plugin.settings.dragWithShift = value as any;
+				this.plugin.settings.dragWithShift = value as DragAction;
 				this.plugin.saveSettings();
 			});
 		createSetting(`Drag with ${ctrlKeyName}+Shift`, 
 			`Choose the type of embed or link to create when dragging with ${ctrlKeyName}+Shift`, 
 			this.plugin.settings.dragWithCtrlShift,
 			(value) => {
-				this.plugin.settings.dragWithCtrlShift = value as any;
+				this.plugin.settings.dragWithCtrlShift = value as DragAction;
 				this.plugin.saveSettings();
 			});
 	}
