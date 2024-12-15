@@ -1,7 +1,7 @@
 {
 	"id": "external-file-embed-and-link",
 	"name": "External File Embed and Link",
-	"version": "1.0.3",
+	"version": "1.0.5",
 	"minAppVersion": "0.15.0",
 	"description": "Embed and link local files outside your vault with relative paths for cross-device and multi-platform compatibility.",
 	"author": "oylbin",
