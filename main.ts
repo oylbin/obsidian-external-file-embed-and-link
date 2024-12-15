@@ -298,13 +298,16 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		}else{
 			iframe.src = embedUrl;
 		}
-		if(embedPdfArguments.width){
-			iframe.style.width = embedPdfArguments.width;
+		iframe.classList.add("external-embed-pdf-iframe");
+		if (embedPdfArguments.width || embedPdfArguments.height) {
+			iframe.classList.add("external-embed-pdf-iframe-custom-size");
+			if(embedPdfArguments.width){
+				iframe.style.setProperty("--iframe-width", embedPdfArguments.width);
+			}
+			if(embedPdfArguments.height){
+				iframe.style.setProperty("--iframe-height", embedPdfArguments.height);
+			}
 		}
-		if(embedPdfArguments.height){
-			iframe.style.height = embedPdfArguments.height;
-		}
-		iframe.style.border = "none";
 		element.appendChild(iframe);
 	}
 
@@ -415,7 +418,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		//			link.href = `file://${fullPath}`;
 		link.href = "#"
 		link.textContent = fileName ?? "Unknown file";
-		link.style.cursor = "pointer";
 
 		// Click event, use Obsidian's API to open file
 		link.addEventListener("click", () => {

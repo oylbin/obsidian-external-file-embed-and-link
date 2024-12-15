@@ -6,3 +6,10 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+.external-embed-pdf-iframe {
+	border: none;
+}
+.external-embed-pdf-iframe-custom-size {
+	width: var(--iframe-width);
+	height: var(--iframe-height);
+}
