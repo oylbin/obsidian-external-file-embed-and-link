@@ -1,4 +1,5 @@
 import { exec } from 'child_process';
+import { Platform } from 'obsidian';
 import * as path from 'path';
 
 export function customEncodeURI(uri: string) {
@@ -8,14 +9,15 @@ export function customEncodeURI(uri: string) {
 }
 
 export function openFileWithDefaultProgram(filePath: string, onError: (error: Error) => void) {
-	const platform = process.platform;
 	let command = "";
-	if (platform === "win32") {
+	if (Platform.isWin) {
 		command = `start "" "${filePath}"`;
-	} else if (platform === "darwin") {
+	} else if (Platform.isMacOS) {
 		command = `open "${filePath}"`;
-	} else if (platform === "linux") {
+	} else if (Platform.isLinux) {
 		command = `xdg-open "${filePath}"`;
+	}else{
+		onError(new Error("Unsupported platform to open file"));
 	}
 	exec(command, onError);
 }

@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Platform } from 'obsidian';
 import * as http from 'http';
 import * as path from 'path';
 import { httpRequestHandler, findAvailablePort } from './server';
@@ -52,9 +52,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	}
 
 	private getActionFromEventKeys(event: DragEvent): 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault' {
-		const platform = process.platform;
-		// console.log(`platform: ${platform}, shift: ${event.shiftKey}, ctrl: ${event.ctrlKey}, alt: ${event.altKey}, meta: ${event.metaKey}`);
-		if(platform === 'darwin'){
+		// console.log(`shift: ${event.shiftKey}, ctrl: ${event.ctrlKey}, alt: ${event.altKey}, meta: ${event.metaKey}`);
+		if(Platform.isMacOS){
 			if(event.altKey && event.shiftKey){
 				return this.settings.dragWithCtrlShift;
 			}else if(event.shiftKey){
@@ -75,7 +74,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				return 'default';
 			}
 		}
-		return 'default';
 	}
 	private handleDragEvent(event: DragEvent, editor: Editor) {
 		// console.log("drop", event);
@@ -160,8 +158,10 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// console.log("synology drive folder relative to home", this.filePathRelativeToHome("c:/Users/oylb/SynologyDrive"));
 		this.startHttpServer();
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this));
+		if(Platform.isMacOS || Platform.isWin){
+			// only macos and windows support drag and drop currently, that need settings
+			this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this));
+		}
 
 		this.addCommand({
 			id: 'add-external-embed-relative-to-home',

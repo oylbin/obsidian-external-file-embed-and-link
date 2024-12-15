@@ -1,5 +1,5 @@
 import CrossComputerLinkPlugin from 'main';
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, Platform, PluginSettingTab, Setting } from 'obsidian';
 export interface CrossComputerLinkPluginSettings {
 	httpServerPort: number;
 	dragWithCtrl: 'default' | 'LinkRelativeToHome' | 'LinkRelativeToVault' | 'EmbedRelativeToHome' | 'EmbedRelativeToVault' | 'InlineLinkRelativeToHome' | 'InlineLinkRelativeToVault';
@@ -48,8 +48,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		};
 
 		let ctrlKeyName = 'Ctrl';
-		const platform = process.platform;
-		if(platform === 'darwin'){
+		if(Platform.isMacOS){
 			ctrlKeyName = 'Option';
 		}
 
