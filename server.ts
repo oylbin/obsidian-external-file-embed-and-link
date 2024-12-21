@@ -4,6 +4,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getContentType, openFileWithDefaultProgram, parseUrlParams } from 'utils';
 
+import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.min.css';
+import pdf_min_js from 'inline:./assets/pdf.min.js';
+import pdf_worker_min_js from 'inline:./assets/pdf.worker.min.js';
+
 const PDF_HTML_TEMPLATE = `
 <!DOCTYPE html>
 <html>
@@ -318,11 +322,19 @@ function openRequestHandler(url: string, req: http.IncomingMessage, res: http.Se
 	res.end(multiLineStr);
 }
 function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
-	const filePath = path.join(context.vaultDirectory,context.pluginDirectory, url);
-	const contentType = getContentType(filePath);
-	res.setHeader('Content-Type', contentType);
-	const stream = fs.createReadStream(filePath);
-	stream.pipe(res);
+	if(url === "/assets/pdf_viewer.min.css") {
+		res.setHeader('Content-Type', 'text/css');
+		res.end(pdf_viewer_min_css);
+	}else if(url === "/assets/pdf.min.js") {
+		res.setHeader('Content-Type', 'application/javascript');
+		res.end(pdf_min_js);
+	}else if(url === "/assets/pdf.worker.min.js") {	
+		res.setHeader('Content-Type', 'application/javascript');
+		res.end(pdf_worker_min_js);
+	}else{
+		res.writeHead(404);
+		res.end(`Invalid path ${url}`);
+	}
 }
 export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	// console.log("httpRequestHandler", req.url);

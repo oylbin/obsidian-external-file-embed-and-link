@@ -1,4 +1,5 @@
 import esbuild from "esbuild";
+import inlineImportPlugin from "esbuild-plugin-inline-import";
 import process from "process";
 import builtins from "builtin-modules";
 
@@ -38,6 +39,10 @@ const context = await esbuild.context({
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
+	plugins: [
+		// Always include this plugin before others
+		inlineImportPlugin()    
+	],
 	minify: prod,
 });
 
