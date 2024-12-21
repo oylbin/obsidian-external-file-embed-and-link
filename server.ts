@@ -9,8 +9,8 @@ const PDF_HTML_TEMPLATE = `
 <html>
 <head>
     <title>PDF Viewer</title>
-    <link rel="stylesheet" href="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.js/2.16.105/pdf_viewer.min.css">
-    <script src="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.js/2.16.105/pdf.min.js"></script>
+    <link rel="stylesheet" href="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf_viewer.min.css">
+    <script src="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.min.js"></script>
     <style>
         #toolbar {
             background-color: #474747;
@@ -55,7 +55,7 @@ const PDF_HTML_TEMPLATE = `
         <div id="viewer"></div>
     </div>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.js/2.16.105/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.worker.min.js';
         
         let pdfDoc = null;
         let pageNum = PAGE_TO_REPLACE;
