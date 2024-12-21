@@ -162,7 +162,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'add-external-embed-relative-to-home',
-			name: 'Add External Embed Relative to Home',
+			name: 'Add external embed relative to home',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(
 					editor, 
@@ -173,14 +173,14 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		});
 		this.addCommand({
 			id: 'add-external-link-relative-to-home',
-			name: 'Add External Link Relative to Home',
+			name: 'Add external link relative to home',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(editor, this.homeDirectory, this.createLinkRelativeToHome.bind(this));
 			}
 		});	
 		this.addCommand({
 			id: 'add-external-inline-link-relative-to-home',
-			name: 'Add External Inline Link Relative to Home',
+			name: 'Add external inline link relative to home',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(editor, this.homeDirectory, this.createInlineLinkRelativeToHome.bind(this));
 			}
@@ -188,7 +188,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'add-external-embed-relative-to-vault',
-			name: 'Add External Embed Relative to Vault',
+			name: 'Add external embed relative to vault',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(
 					editor, 
@@ -199,14 +199,14 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		});
 		this.addCommand({
 			id: 'add-external-link-relative-to-vault',
-			name: 'Add External Link Relative to Vault',
+			name: 'Add external link relative to vault',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(editor, this.vaultDirectory, this.createLinkRelativeToVault.bind(this));
 			}
 		});
 		this.addCommand({
 			id: 'add-external-inline-link-relative-to-vault',
-			name: 'Add External Inline Link Relative to Vault',
+			name: 'Add external inline link relative to vault',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(editor, this.vaultDirectory, this.createInlineLinkRelativeToVault.bind(this));
 			}
