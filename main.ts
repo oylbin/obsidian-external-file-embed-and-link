@@ -1,7 +1,7 @@
 import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Platform } from 'obsidian';
 import * as http from 'http';
 import * as path from 'path';
-import { httpRequestHandler, findAvailablePort } from './server';
+import { httpRequestHandler, findAvailablePort, CrossComputerLinkContext } from './server';
 import { openFileWithDefaultProgram, getRelativePath } from './utils';
 import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction } from './settings';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedPdfArguments } from 'embedProcessor';
@@ -9,10 +9,11 @@ import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedPdfArguments }
 
 export default class CrossComputerLinkPlugin extends Plugin {
 	settings: CrossComputerLinkPluginSettings;
-	homeDirectory: string;
-	vaultDirectory: string;
+	// homeDirectory: string;
+	// vaultDirectory: string;
 	server: http.Server | null;
 	private cleanupDropHandler: (() => void) | null = null;
+	context: CrossComputerLinkContext;
 
 
 	insertText(editor: Editor, text: string) {
@@ -92,42 +93,42 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				// @ts-ignore Property 'path' exists at runtime but is not typed
 				const fullpath = files[i].path;	
 				if (action === DragAction.EmbedRelativeToHome) {
-					const relativePath = getRelativePath(this.homeDirectory, fullpath);
+					const relativePath = getRelativePath(this.context.homeDirectory, fullpath);
 					this.createEmbedRelativeToHome(editor, relativePath);
 				} else if (action === DragAction.EmbedRelativeToVault) {
-					const relativePath = getRelativePath(this.vaultDirectory, fullpath);
+					const relativePath = getRelativePath(this.context.vaultDirectory, fullpath);
 					this.createEmbedRelativeToVault(editor, relativePath);
 				} else if (action === DragAction.LinkRelativeToHome) {
-					const relativePath = getRelativePath(this.homeDirectory, fullpath);
+					const relativePath = getRelativePath(this.context.homeDirectory, fullpath);
 					this.createLinkRelativeToHome(editor, relativePath);
 				} else if (action === DragAction.LinkRelativeToVault) {
-					const relativePath = getRelativePath(this.vaultDirectory, fullpath);
+					const relativePath = getRelativePath(this.context.vaultDirectory, fullpath);
 					this.createLinkRelativeToVault(editor, relativePath);
 				}else if(action === DragAction.InlineLinkRelativeToHome){
-					const relativePath = getRelativePath(this.homeDirectory, fullpath);
+					const relativePath = getRelativePath(this.context.homeDirectory, fullpath);
 					this.createInlineLinkRelativeToHome(editor, relativePath);
 				}else if(action === DragAction.InlineLinkRelativeToVault){
-					const relativePath = getRelativePath(this.vaultDirectory, fullpath);
+					const relativePath = getRelativePath(this.context.vaultDirectory, fullpath);
 					this.createInlineLinkRelativeToVault(editor, relativePath);
 				}
 			}
 		}
 	}
 	private startHttpServer() {
-		findAvailablePort(this.settings.httpServerPort)
+		findAvailablePort(this.context.port)
 		.then((port: number) => {
-			if (port !== this.settings.httpServerPort) {
-				new Notice(`Port ${this.settings.httpServerPort} was in use. Using port ${port} instead.`);
-				this.settings.httpServerPort = port;
-				this.saveSettings();
+			if (port !== this.context.port) {
+				//new Notice(`Port ${this.context.port} was in use. Using port ${port} instead.`);
+				this.context.port = port;
+				//this.saveSettings();
 			}
 	
 			const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
-				httpRequestHandler(req, res, this.homeDirectory, this.vaultDirectory);
+				httpRequestHandler(req, res, this.context);
 			});
 	
 			server.listen(port, "127.0.0.1", () => {
-				console.log(`HTTP server is running on port ${port}`);
+				//console.log(`HTTP server is running on port ${port}`);
 			});
 			server.on('error', (e: NodeJS.ErrnoException) => {
 				if (e.code === 'EADDRINUSE') {
@@ -147,11 +148,22 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	}
 	async onload() {
 		await this.loadSettings();
-		this.homeDirectory = process.env.HOME || process.env.USERPROFILE || '';
+		this.context = new CrossComputerLinkContext();
+		this.context.homeDirectory = process.env.HOME || process.env.USERPROFILE || '';
 		// @ts-ignore Property 'basePath' exists at runtime but is not typed
-		this.vaultDirectory = this.app.vault.adapter.basePath;
+		this.context.vaultDirectory = this.app.vault.adapter.basePath;
+		this.context.port = 11411;
+		if(this.manifest.dir){
+			this.context.pluginDirectory = this.manifest.dir;
+		}else{
+			this.context.pluginDirectory = this.app.vault.configDir + '/plugins/' + this.manifest.id;
+		}
 		// console.log("vaultDirectory", this.vaultDirectory);
 		// console.log("homeDirectory", this.homeDirectory);
+		// @ts-ignore Property 'manifest' exists at runtime but is not typed
+		//const pluginDirectory = this.app.vault.configDir + '/plugins/' + this.manifest.id;
+		// console.log("vault object", this.app.vault);
+		// console.log("manifest", this.manifest);
 
 		this.startHttpServer();
 
@@ -166,7 +178,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(
 					editor, 
-					this.homeDirectory, 
+					this.context.homeDirectory, 
 					this.createEmbedRelativeToHome.bind(this)
 				);
 			}
@@ -175,14 +187,14 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			id: 'add-external-link-relative-to-home',
 			name: 'Add external link relative to home',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(editor, this.homeDirectory, this.createLinkRelativeToHome.bind(this));
+				this.showFilePickerAndCreateEmbed(editor, this.context.homeDirectory, this.createLinkRelativeToHome.bind(this));
 			}
 		});	
 		this.addCommand({
 			id: 'add-external-inline-link-relative-to-home',
 			name: 'Add external inline link relative to home',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(editor, this.homeDirectory, this.createInlineLinkRelativeToHome.bind(this));
+				this.showFilePickerAndCreateEmbed(editor, this.context.homeDirectory, this.createInlineLinkRelativeToHome.bind(this));
 			}
 		});
 
@@ -192,7 +204,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(
 					editor, 
-					this.vaultDirectory, 
+					this.context.vaultDirectory, 
 					this.createEmbedRelativeToVault.bind(this)
 				);
 			}
@@ -201,14 +213,14 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			id: 'add-external-link-relative-to-vault',
 			name: 'Add external link relative to vault',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(editor, this.vaultDirectory, this.createLinkRelativeToVault.bind(this));
+				this.showFilePickerAndCreateEmbed(editor, this.context.vaultDirectory, this.createLinkRelativeToVault.bind(this));
 			}
 		});
 		this.addCommand({
 			id: 'add-external-inline-link-relative-to-vault',
 			name: 'Add external inline link relative to vault',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(editor, this.vaultDirectory, this.createInlineLinkRelativeToVault.bind(this));
+				this.showFilePickerAndCreateEmbed(editor, this.context.vaultDirectory, this.createInlineLinkRelativeToVault.bind(this));
 			}
 		});
 
@@ -345,7 +357,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// Find elements with LinkRelativeToHome class
 		element.querySelectorAll('.LinkRelativeToHome').forEach((el) => {
 			const relativePath = el.textContent?.trim();
-			const fullPath = this.homeDirectory + "/" + relativePath;
+			const fullPath = this.context.homeDirectory + "/" + relativePath;
 			el.textContent = path.basename(fullPath);
 
 			// Modifying href here is not effective, clicking will cause Not allowed to load local resource error
@@ -360,7 +372,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		});
 		element.querySelectorAll('.LinkRelativeToVault').forEach((el) => {
 			const relativePath = el.textContent?.trim();
-			const fullPath = this.vaultDirectory + "/" + relativePath;
+			const fullPath = this.context.vaultDirectory + "/" + relativePath;
 			el.textContent = path.basename(fullPath);
 
 			// Modifying href here is not effective, clicking will cause Not allowed to load local resource error
@@ -381,7 +393,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		if (filePath.startsWith("/")) {
 			filePath = filePath.substring(1);
 		}
-		const fullPath = `${relativeTo === "home" ? this.homeDirectory : this.vaultDirectory}/${filePath}`;
+		const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${filePath}`;
 
 		// Extract file name
 		const fileName = filePath.split("/").pop();
@@ -422,10 +434,10 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		const embedData = parseEmbedData(filePath);
 		// console.log("embedData", embedData);
 		// check if filename contains '|', the text after '|' is the embed arguments
-		const fileUrl = `http://127.0.0.1:${this.settings.httpServerPort}/download/${relativeTo === "home" ? "home" : "vault"}?p=${embedData.embedFilePath}`;
+		const fileUrl = `http://127.0.0.1:${this.context.port}/download/${relativeTo === "home" ? "home" : "vault"}?p=${embedData.embedFilePath}`;
 		if (embedData.embedType === 'pdf') {
 			// this.embedPdf(fileUrl, embedData.embedArguments, element, context);
-			const embedUrl = `http://127.0.0.1:${this.settings.httpServerPort}/embed/${relativeTo === "home" ? "home" : "vault"}?p=${embedData.embedFilePath}`;
+			const embedUrl = `http://127.0.0.1:${this.context.port}/embed/${relativeTo === "home" ? "home" : "vault"}?p=${embedData.embedFilePath}`;
 			this.embedPdfWithIframe(embedUrl, embedData.embedArguments, element, context);
 		} else if (embedData.embedType === 'image') {
 			this.embedImage(fileUrl, embedData.embedArguments, element, context);
@@ -436,7 +448,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		} else if (embedData.embedType === 'markdown') {
 			//this.embedMarkdown(fileUrl, embedData.embedArguments, element, context);
 		} else {
-			const fullPath = `${relativeTo === "home" ? this.homeDirectory : this.vaultDirectory}/${filePath}`;
+			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${filePath}`;
 			this.embedOther(fullPath, element, context);
 		}
 	}

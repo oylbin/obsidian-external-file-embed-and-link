@@ -9,8 +9,8 @@ const PDF_HTML_TEMPLATE = `
 <html>
 <head>
     <title>PDF Viewer</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf_viewer.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <link rel="stylesheet" href="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.js/2.16.105/pdf_viewer.min.css">
+    <script src="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         #toolbar {
             background-color: #474747;
@@ -55,7 +55,7 @@ const PDF_HTML_TEMPLATE = `
         <div id="viewer"></div>
     </div>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.js/2.16.105/pdf.worker.min.js';
         
         let pdfDoc = null;
         let pageNum = PAGE_TO_REPLACE;
@@ -140,6 +140,12 @@ const UNSUPPORTED_FILE_TEMPLATE = `
 </html>
 `
 
+export class CrossComputerLinkContext {
+	homeDirectory: string;
+	vaultDirectory: string;
+	port: number;
+	pluginDirectory: string;
+}
 
 export function getTemplate(extname: string) {
 	extname = extname.toLowerCase();
@@ -181,7 +187,7 @@ export function findAvailablePort(startPort: number): Promise<number> {
 
 
 
-function getFilePathFromUrl(url: string, homeDirectory: string, vaultDirectory: string) {
+function getFilePathFromUrl(url: string, context: CrossComputerLinkContext) {
 	// console.log("getFilePathFromUrl", url);
 	const [urlWithoutParams, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
@@ -189,16 +195,16 @@ function getFilePathFromUrl(url: string, homeDirectory: string, vaultDirectory: 
 	// console.log("parsedParams", parsedParams);
 	if(urlWithoutParams.startsWith("/download/home") || urlWithoutParams.startsWith("/open/home") || urlWithoutParams.startsWith("/embed/home")) {
 		const decodedPath = decodeURIComponent(parsedParams.p);
-		const filePath = path.join(homeDirectory, decodedPath);
+		const filePath = path.join(context.homeDirectory, decodedPath);
 		return filePath;
 	} else if(urlWithoutParams.startsWith("/download/vault") || urlWithoutParams.startsWith("/open/vault") || urlWithoutParams.startsWith("/embed/vault")) {
 		const decodedPath = decodeURIComponent(parsedParams.p);
-		const filePath = path.join(vaultDirectory, decodedPath);
+		const filePath = path.join(context.vaultDirectory, decodedPath);
 		return filePath;
 	}
 	throw new Error("Invalid url: " + url);
 }
-export function embedRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, homeDirectory: string, vaultDirectory: string) {
+export function embedRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	res.setHeader('Content-Type', 'text/html; charset=utf-8');
 	// url may contain ? followed by parameters, split url and parameters
 	const [, params] = url.split('?');
@@ -215,6 +221,7 @@ export function embedRequestHandler(url: string, req: http.IncomingMessage, res:
 				parsedParams.page = "1";
 			}
 			multiLineStr = multiLineStr.replace("PAGE_TO_REPLACE", parsedParams.page);
+			multiLineStr = multiLineStr.replace(/PORT_TO_REPLACE/g, context.port.toString());
 		}
 		res.end(multiLineStr);
 	} else {
@@ -223,8 +230,8 @@ export function embedRequestHandler(url: string, req: http.IncomingMessage, res:
 		res.end(multiLineStr);
 	}
 }
-export function downloadRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, homeDirectory: string, vaultDirectory: string) {
-	const filePath = getFilePathFromUrl(url, homeDirectory, vaultDirectory);
+export function downloadRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
+	const filePath = getFilePathFromUrl(url, context);
 	const extname = path.extname(filePath).toLowerCase();
 	const contentType = getContentType(extname);
 	if (!fs.existsSync(filePath)) {
@@ -285,8 +292,8 @@ export function downloadRequestHandler(url: string, req: http.IncomingMessage, r
 		stream.pipe(res);
 	}
 }
-function openRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, homeDirectory: string, vaultDirectory: string) {
-	const filePath = getFilePathFromUrl(url, homeDirectory, vaultDirectory);
+function openRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
+	const filePath = getFilePathFromUrl(url, context);
 	// console.log("filePath", filePath);
 	openFileWithDefaultProgram(filePath, (error: Error) => {
 		if(error){
@@ -310,7 +317,14 @@ function openRequestHandler(url: string, req: http.IncomingMessage, res: http.Se
 		`;
 	res.end(multiLineStr);
 }
-export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerResponse, homeDirectory: string, vaultDirectory: string) {
+function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
+	const filePath = path.join(context.vaultDirectory,context.pluginDirectory, url);
+	const contentType = getContentType(filePath);
+	res.setHeader('Content-Type', contentType);
+	const stream = fs.createReadStream(filePath);
+	stream.pipe(res);
+}
+export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	// console.log("httpRequestHandler", req.url);
 	// Read file content and return it via http response
 	const url = req.url;
@@ -320,13 +334,16 @@ export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerRe
 		return;
 	}
 	if(url.startsWith("/embed/")) {
-		embedRequestHandler(url, req, res, homeDirectory, vaultDirectory);
+		embedRequestHandler(url, req, res, context);
 		return;
 	}else if(url.startsWith("/download/")) {
-		downloadRequestHandler(url, req, res, homeDirectory, vaultDirectory);
+		downloadRequestHandler(url, req, res, context);
 		return;
 	}else if(url.startsWith("/open/")) {
-		openRequestHandler(url, req, res, homeDirectory, vaultDirectory);
+		openRequestHandler(url, req, res, context);
+		return;
+	}else if(url.startsWith("/assets/")) {
+		assetRequestHandler(url, req, res, context);
 		return;
 	}
 	res.writeHead(404);

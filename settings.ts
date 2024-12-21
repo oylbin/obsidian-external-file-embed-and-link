@@ -12,7 +12,6 @@ export enum DragAction {
 }
 
 export interface CrossComputerLinkPluginSettings {
-	httpServerPort: number;
 	dragWithCtrl: DragAction;
 	dragWithShift: DragAction;
 	dragWithCtrlShift: DragAction;
@@ -20,7 +19,6 @@ export interface CrossComputerLinkPluginSettings {
 }
 
 export const DEFAULT_SETTINGS: CrossComputerLinkPluginSettings = {
-	httpServerPort: 11411,
 	dragWithCtrl: DragAction.Default,
 	dragWithShift: DragAction.InlineLinkRelativeToHome,
 	dragWithCtrlShift: DragAction.EmbedRelativeToHome,
