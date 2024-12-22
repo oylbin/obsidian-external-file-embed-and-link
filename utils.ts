@@ -53,7 +53,7 @@ export function getContentType(extname: string) {
 export const ImageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg', '.avif'];
 export const VideoExtensions = ['.mp4', '.webm', '.mkv', '.mov', '.ogv'];
 export const AudioExtensions = ['.mp3', '.ogg', '.wav', '.flac', '.m4a', '.webm'];
-export const MarkdownExtensions = ['.md', '.markdown'];
+export const MarkdownExtensions = ['.md', '.markdown', '.txt'];
 
 export function isImage(fullpath: string) {
 	const extname = path.extname(fullpath).toLowerCase();

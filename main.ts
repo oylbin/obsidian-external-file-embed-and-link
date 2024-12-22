@@ -422,11 +422,11 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	}
 
 	private async embedMarkdown(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
-		console.log("fullPath", fullPath);
-		console.log("embedArguments", embedArguments);
+		// console.log("fullPath", fullPath);
+		// console.log("embedArguments", embedArguments);
 		const markdownContent = await fs.promises.readFile(fullPath, 'utf-8');
 		const htmlContent = await extractHeaderSection(markdownContent, embedArguments);
-		console.log("htmlContent", htmlContent);
+		// console.log("htmlContent", htmlContent);
 		element.innerHTML = htmlContent;
 		// use css to add border
 		element.classList.add("external-embed-markdown-element");
