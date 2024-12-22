@@ -1,6 +1,7 @@
 import { exec } from 'child_process';
 import { Platform } from 'obsidian';
 import * as path from 'path';
+import { marked } from 'marked';
 
 export function customEncodeURI(uri: string) {
 	return uri.replace(/[ #&%?]/g, function (c) {
@@ -93,3 +94,22 @@ export function parseUrlParams(params: string|undefined): { [key: string]: strin
 }
 
 
+export async function extractHeaderSection(markdown: string, header: string) {
+	if(header === ''){
+		return marked(markdown);
+	}
+	const tokens = marked.lexer(markdown);
+	let capture = false;
+	let result = '';
+  
+	tokens.forEach((token) => {
+		if (token.type === 'heading' && token.depth === 2 && token.text === header) {
+			capture = true;
+		} else if (capture && token.type === 'heading') {
+			capture = false;
+		} else if (capture) {
+			result += marked.parser([token]);
+		}
+	});
+	return result;
+}
