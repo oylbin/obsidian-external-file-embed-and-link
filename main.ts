@@ -426,9 +426,16 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// console.log("embedArguments", embedArguments);
 		const markdownContent = await fs.promises.readFile(fullPath, 'utf-8');
 		const htmlContent = await extractHeaderSection(markdownContent, embedArguments);
-		// console.log("htmlContent", htmlContent);
-		element.innerHTML = htmlContent;
-		// use css to add border
+		// Using innerHTML, outerHTML or similar API's is a security risk. 
+		//Instead, use the DOM API or the Obsidian helper functions: https://docs.obsidian.md/Plugins/User+interface/HTML+elements
+		// element.innerHTML = htmlContent;
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(htmlContent, 'text/html');
+		const nodes = Array.from(doc.body.children);
+		nodes.forEach(node => {
+			const importedNode = document.importNode(node, true);
+			element.appendChild(importedNode);
+		});
 		element.classList.add("external-embed-markdown-element");
 	}
 
