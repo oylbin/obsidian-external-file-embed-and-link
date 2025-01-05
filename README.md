@@ -109,3 +109,12 @@ Create embeds or links by holding modifier keys (`ctrl`, `shift`, `ctrl+shift`) 
 Modifier keys can be customized in the plugin settings:
 
 ![settings](docs/assets/settings.png)
+
+
+## Acknowledgement and License Notice
+
+This project uses [PDF.js](https://github.com/mozilla/pdf.js) for PDF rendering, which is made available under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). A copy of the PDF.js license can be found in the `LICENSE` file of the PDF.js repository. 
+
+If you distribute this project or its binaries, please ensure that you include the appropriate copyright and license notices as required by the Apache License 2.0. 
+
+For more information on PDF.js and its contributors, visit the official [GitHub repository](https://github.com/mozilla/pdf.js).
