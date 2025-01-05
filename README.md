@@ -1,4 +1,4 @@
-# Obsidian External File Embed and Link
+# External File Embed and Link
 
 Embed and link local files outside your obsidian vault with relative paths for cross-device and multi-platform compatibility.
 
