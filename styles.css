@@ -13,3 +13,8 @@ If your plugin does not need CSS, delete this file.
 	width: var(--iframe-width);
 	height: var(--iframe-height);
 }
+
+.external-embed-markdown-element {
+	border: 1px solid gray;
+	padding: 10px;
+}

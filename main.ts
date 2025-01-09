@@ -1,8 +1,9 @@
 import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Platform } from 'obsidian';
 import * as http from 'http';
 import * as path from 'path';
+import * as fs from 'fs';
 import { httpRequestHandler, findAvailablePort, CrossComputerLinkContext } from './server';
-import { openFileWithDefaultProgram, getRelativePath } from './utils';
+import { openFileWithDefaultProgram, getRelativePath, extractHeaderSection } from './utils';
 import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction } from './settings';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedPdfArguments } from 'embedProcessor';
 
@@ -420,6 +421,36 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		element.appendChild(link);
 	}
 
+	private async embedMarkdown(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		// console.log("fullPath", fullPath);
+		// console.log("embedArguments", embedArguments);
+
+		// create a header element to show the filename
+		const header = document.createElement("h2");
+		if(embedArguments === ''){
+			header.textContent = path.basename(fullPath);
+		}else{
+			header.textContent = path.basename(fullPath) + "#" + embedArguments;
+		}
+		element.appendChild(header);
+
+
+		const markdownContent = await fs.promises.readFile(fullPath, 'utf-8');
+		const htmlContent = await extractHeaderSection(markdownContent, embedArguments);
+		// Using innerHTML, outerHTML or similar API's is a security risk. 
+		//Instead, use the DOM API or the Obsidian helper functions: https://docs.obsidian.md/Plugins/User+interface/HTML+elements
+		// element.innerHTML = htmlContent;
+		
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(htmlContent, 'text/html');
+		const nodes = Array.from(doc.body.children);
+		nodes.forEach(node => {
+			const importedNode = document.importNode(node, true);
+			element.appendChild(importedNode);
+		});
+		element.classList.add("external-embed-markdown-element");
+	}
+
 	private processCodeBlockEmbed(relativeTo: "home" | "vault", source: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		// Parse path
 		let filePath = source.trim();
@@ -446,7 +477,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		} else if (embedData.embedType === 'audio') {
 			this.embedAudio(fileUrl, element, context);
 		} else if (embedData.embedType === 'markdown') {
-			//this.embedMarkdown(fileUrl, embedData.embedArguments, element, context);
+			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${embedData.embedFilePath}`;
+			this.embedMarkdown(fullPath, embedData.embedArguments, element, context);
 		} else {
 			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${filePath}`;
 			this.embedOther(fullPath, element, context);

@@ -4,11 +4,11 @@ Embed and link local files outside your obsidian vault with relative paths for c
 
 ## Features
 
-1. Embed external files (PDF, Images, Audio, Video) outside your obsidian vault. (Markdown file embedding is under development)
-2. Create links to files outside your obsidian vault that open with system default applications
-3. Reference files using paths relative to Home directory or Vault directory for cross-device and cross-platform compatibility
-4. Provide commands to add embeds or links via file picker
-5. Support drag & drop to create embeds or links
+1. Embed external files (Markdown, PDF, Images, Audio, Video) outside your obsidian vault.
+2. Create links to files outside your obsidian vault that open with system default applications.
+3. Reference files using paths relative to Home directory or Vault directory for cross-device and cross-platform compatibility.
+4. Provide commands to add embeds or links via file picker.
+5. Support drag & drop to create embeds or links.
 
 ## Detailed Usage
 
@@ -38,6 +38,9 @@ Using relative paths ensures compatibility across different computers and operat
 
 ### Supported File Types for Embedding
 
+Almost the same as Obsidian's [Accepted file formats](https://help.obsidian.md/Files+and+folders/Accepted+file+formats) documentation except for JSON Canvas files.
+
+- **Markdown**: `.md`, `.markdown`, `.txt`
 - **Images**: `.avif`, `.bmp`, `.gif`, `.jpeg`, `.jpg`, `.png`, `.svg`, `.webp`
 - **Audio**: `.flac`, `.m4a`, `.mp3`, `.ogg`, `.wav`, `.webm`, `.3gp`
 - **Video**: `.mkv`, `.mov`, `.mp4`, `.ogv`, `.webm`
@@ -46,6 +49,16 @@ Using relative paths ensures compatibility across different computers and operat
 ### Embedding Options
 
 Following Obsidian's [Embed files](https://help.obsidian.md/Linking+notes+and+files/Embed+files) documentation, this plugin supports parameters for controlling display behavior:
+
+#### Markdown Files
+
+Add header name after `#` to embed only the header section:
+
+~~~markdown
+```EmbedRelativeToHome
+SynologyDrive/work/Document.md#This is a header
+```
+~~~
 
 #### PDF Files
 Add parameters after `#` to control page number, width, and height:

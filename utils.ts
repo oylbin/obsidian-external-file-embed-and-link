@@ -1,6 +1,7 @@
 import { exec } from 'child_process';
 import { Platform } from 'obsidian';
 import * as path from 'path';
+import { marked } from 'marked';
 
 export function customEncodeURI(uri: string) {
 	return uri.replace(/[ #&%?]/g, function (c) {
@@ -52,7 +53,7 @@ export function getContentType(extname: string) {
 export const ImageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg', '.avif'];
 export const VideoExtensions = ['.mp4', '.webm', '.mkv', '.mov', '.ogv'];
 export const AudioExtensions = ['.mp3', '.ogg', '.wav', '.flac', '.m4a', '.webm'];
-export const MarkdownExtensions = ['.md', '.markdown'];
+export const MarkdownExtensions = ['.md', '.markdown', '.txt'];
 
 export function isImage(fullpath: string) {
 	const extname = path.extname(fullpath).toLowerCase();
@@ -92,4 +93,28 @@ export function parseUrlParams(params: string|undefined): { [key: string]: strin
 	return paramDict;
 }
 
+
+export async function extractHeaderSection(markdown: string, header: string) {
+	if(header === ''){
+		return marked(markdown);
+	}
+	const tokens = marked.lexer(markdown);
+	let capture = false;
+	let result = '';
+	// console.log("header", header);
+	tokens.forEach((token) => {
+		// console.log("token", token);
+		if (token.type === 'heading' && token.text === header) {
+			capture = true;
+		} else if (capture && token.type === 'heading') {
+			capture = false;
+		} else if (capture) {
+			result += marked.parser([token]);
+		}
+	});
+	if(result === ''){
+		return `<p>failed to find header in markdown file: "${header}"</p>`;
+	}
+	return result;
+}
 
