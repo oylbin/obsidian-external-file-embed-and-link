@@ -4,9 +4,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getContentType, openFileWithDefaultProgram, parseUrlParams } from 'utils';
 
-import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.min.css';
-import pdf_min_js from 'inline:./assets/pdf.min.js';
-import pdf_worker_min_js from 'inline:./assets/pdf.worker.min.js';
+import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
+import pdf_min_js from 'inline:./assets/pdf.js';
+import pdf_worker_min_js from 'inline:./assets/pdf.worker.js';
 
 const PDF_HTML_TEMPLATE = `
 <!DOCTYPE html>
