@@ -101,9 +101,10 @@ export async function extractHeaderSection(markdown: string, header: string) {
 	const tokens = marked.lexer(markdown);
 	let capture = false;
 	let result = '';
-  
+	// console.log("header", header);
 	tokens.forEach((token) => {
-		if (token.type === 'heading' && token.depth === 2 && token.text === header) {
+		// console.log("token", token);
+		if (token.type === 'heading' && token.text === header) {
 			capture = true;
 		} else if (capture && token.type === 'heading') {
 			capture = false;
@@ -111,5 +112,9 @@ export async function extractHeaderSection(markdown: string, header: string) {
 			result += marked.parser([token]);
 		}
 	});
+	if(result === ''){
+		return `<p>failed to find header in markdown file: "${header}"</p>`;
+	}
 	return result;
 }
+

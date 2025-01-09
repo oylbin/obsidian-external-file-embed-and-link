@@ -424,11 +424,23 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	private async embedMarkdown(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		// console.log("fullPath", fullPath);
 		// console.log("embedArguments", embedArguments);
+
+		// create a header element to show the filename
+		const header = document.createElement("h2");
+		if(embedArguments === ''){
+			header.textContent = path.basename(fullPath);
+		}else{
+			header.textContent = path.basename(fullPath) + "#" + embedArguments;
+		}
+		element.appendChild(header);
+
+
 		const markdownContent = await fs.promises.readFile(fullPath, 'utf-8');
 		const htmlContent = await extractHeaderSection(markdownContent, embedArguments);
 		// Using innerHTML, outerHTML or similar API's is a security risk. 
 		//Instead, use the DOM API or the Obsidian helper functions: https://docs.obsidian.md/Plugins/User+interface/HTML+elements
 		// element.innerHTML = htmlContent;
+		
 		const parser = new DOMParser();
 		const doc = parser.parseFromString(htmlContent, 'text/html');
 		const nodes = Array.from(doc.body.children);

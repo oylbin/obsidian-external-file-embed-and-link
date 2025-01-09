@@ -78,6 +78,7 @@ export function parseEmbedData(inputLine: string): EmbedData {
 	test.png|640
 	
 	*/
+	// FIXME I think use regex is better
 	if(lowerCaseNameWithArguments.includes(".pdf#")) {
 		const embedType = 'pdf';
 		// TODO This is an inexact implementation, not considering the case where the file name contains #.
@@ -95,8 +96,13 @@ export function parseEmbedData(inputLine: string): EmbedData {
 		const mark = ext + "#";
 		if(lowerCaseNameWithArguments.includes(mark)) {
 			const embedType = 'markdown';
-			const embedArguments = lowerCaseNameWithArguments.split(mark)[1];
-			const embedFilePath = inputLine.substring(0, inputLine.length - embedArguments.length - 1);
+			// can not use lowerCaseNameWithArguments as it have header name which will be used as embedArguments
+			const embedArguments0 = lowerCaseNameWithArguments.split(mark)[1];
+			const embedFilePath = inputLine.substring(0, inputLine.length - embedArguments0.length -1);
+			const embedArguments = inputLine.substring(embedFilePath.length + 1);
+			// console.log("inputLine", inputLine);
+			// console.log("embedArguments", embedArguments);
+			// console.log("embedFilePath", embedFilePath);
 			return {
 				embedType,
 				embedArguments,
