@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import { httpRequestHandler, findAvailablePort, CrossComputerLinkContext } from './server';
 import { openFileWithDefaultProgram, getRelativePath, extractHeaderSection } from './utils';
 import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction } from './settings';
-import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedPdfArguments } from 'embedProcessor';
+import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedFolderArguments, parseEmbedPdfArguments } from 'embedProcessor';
 
 
 export default class CrossComputerLinkPlugin extends Plugin {
@@ -55,24 +55,24 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 	private getActionFromEventKeys(event: DragEvent): DragAction {
 		// console.log(`shift: ${event.shiftKey}, ctrl: ${event.ctrlKey}, alt: ${event.altKey}, meta: ${event.metaKey}`);
-		if(Platform.isMacOS){
-			if(event.altKey && event.shiftKey){
+		if (Platform.isMacOS) {
+			if (event.altKey && event.shiftKey) {
 				return this.settings.dragWithCtrlShift;
-			}else if(event.shiftKey){
+			} else if (event.shiftKey) {
 				return this.settings.dragWithShift;
-			}else if(event.altKey){
+			} else if (event.altKey) {
 				return this.settings.dragWithCtrl;
-			}else{
+			} else {
 				return DragAction.Default;
 			}
-		}else{
-			if(event.ctrlKey && event.shiftKey){
+		} else {
+			if (event.ctrlKey && event.shiftKey) {
 				return this.settings.dragWithCtrlShift;
-			}else if(event.shiftKey){
+			} else if (event.shiftKey) {
 				return this.settings.dragWithShift;
-			}else if(event.ctrlKey){
+			} else if (event.ctrlKey) {
 				return this.settings.dragWithCtrl;
-			}else{
+			} else {
 				return DragAction.Default;
 			}
 		}
@@ -80,7 +80,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	private handleDragEvent(event: DragEvent, editor: Editor) {
 		// console.log("drop", event);
 		const action = this.getActionFromEventKeys(event);
-		if(action === DragAction.Default){
+		if (action === DragAction.Default) {
 			return;
 		}
 		event.preventDefault();
@@ -92,7 +92,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			// for each file
 			for (let i = 0; i < files.length; i++) {
 				// @ts-ignore Property 'path' exists at runtime but is not typed
-				const fullpath = files[i].path;	
+				const fullpath = files[i].path;
 				if (action === DragAction.EmbedRelativeToHome) {
 					const relativePath = getRelativePath(this.context.homeDirectory, fullpath);
 					this.createEmbedRelativeToHome(editor, relativePath);
@@ -105,10 +105,10 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				} else if (action === DragAction.LinkRelativeToVault) {
 					const relativePath = getRelativePath(this.context.vaultDirectory, fullpath);
 					this.createLinkRelativeToVault(editor, relativePath);
-				}else if(action === DragAction.InlineLinkRelativeToHome){
+				} else if (action === DragAction.InlineLinkRelativeToHome) {
 					const relativePath = getRelativePath(this.context.homeDirectory, fullpath);
 					this.createInlineLinkRelativeToHome(editor, relativePath);
-				}else if(action === DragAction.InlineLinkRelativeToVault){
+				} else if (action === DragAction.InlineLinkRelativeToVault) {
 					const relativePath = getRelativePath(this.context.vaultDirectory, fullpath);
 					this.createInlineLinkRelativeToVault(editor, relativePath);
 				}
@@ -117,35 +117,35 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	}
 	private startHttpServer() {
 		findAvailablePort(this.context.port)
-		.then((port: number) => {
-			if (port !== this.context.port) {
-				//new Notice(`Port ${this.context.port} was in use. Using port ${port} instead.`);
-				this.context.port = port;
-				//this.saveSettings();
-			}
-	
-			const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
-				httpRequestHandler(req, res, this.context);
-			});
-	
-			server.listen(port, "127.0.0.1", () => {
-				//console.log(`HTTP server is running on port ${port}`);
-			});
-			server.on('error', (e: NodeJS.ErrnoException) => {
-				if (e.code === 'EADDRINUSE') {
-					new Notice(`Port ${port} is already in use. Please choose a different port in settings.`);
-				} else {
-					new Notice(`Failed to start HTTP server: ${e.message}`);
+			.then((port: number) => {
+				if (port !== this.context.port) {
+					//new Notice(`Port ${this.context.port} was in use. Using port ${port} instead.`);
+					this.context.port = port;
+					//this.saveSettings();
 				}
+
+				const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
+					httpRequestHandler(req, res, this.context);
+				});
+
+				server.listen(port, "127.0.0.1", () => {
+					//console.log(`HTTP server is running on port ${port}`);
+				});
+				server.on('error', (e: NodeJS.ErrnoException) => {
+					if (e.code === 'EADDRINUSE') {
+						new Notice(`Port ${port} is already in use. Please choose a different port in settings.`);
+					} else {
+						new Notice(`Failed to start HTTP server: ${e.message}`);
+					}
+					this.server = null;
+				});
+
+				this.server = server;
+			})
+			.catch((err: Error) => {
+				new Notice(`Failed to start HTTP server: ${err.message}`);
 				this.server = null;
 			});
-	
-			this.server = server;
-		})
-		.catch((err: Error) => {
-			new Notice(`Failed to start HTTP server: ${err.message}`);
-			this.server = null;
-		});
 	}
 	async onload() {
 		await this.loadSettings();
@@ -154,9 +154,9 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// @ts-ignore Property 'basePath' exists at runtime but is not typed
 		this.context.vaultDirectory = this.app.vault.adapter.basePath;
 		this.context.port = 11411;
-		if(this.manifest.dir){
+		if (this.manifest.dir) {
 			this.context.pluginDirectory = this.manifest.dir;
-		}else{
+		} else {
 			this.context.pluginDirectory = this.app.vault.configDir + '/plugins/' + this.manifest.id;
 		}
 		// console.log("vaultDirectory", this.vaultDirectory);
@@ -168,7 +168,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		this.startHttpServer();
 
-		if(Platform.isMacOS || Platform.isWin){
+		if (Platform.isMacOS || Platform.isWin) {
 			// only macos and windows support drag and drop currently, that need settings
 			this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this));
 		}
@@ -178,8 +178,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			name: 'Add external embed relative to home',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(
-					editor, 
-					this.context.homeDirectory, 
+					editor,
+					this.context.homeDirectory,
 					this.createEmbedRelativeToHome.bind(this)
 				);
 			}
@@ -190,7 +190,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(editor, this.context.homeDirectory, this.createLinkRelativeToHome.bind(this));
 			}
-		});	
+		});
 		this.addCommand({
 			id: 'add-external-inline-link-relative-to-home',
 			name: 'Add external inline link relative to home',
@@ -204,8 +204,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			name: 'Add external embed relative to vault',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.showFilePickerAndCreateEmbed(
-					editor, 
-					this.context.vaultDirectory, 
+					editor,
+					this.context.vaultDirectory,
 					this.createEmbedRelativeToVault.bind(this)
 				);
 			}
@@ -237,7 +237,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				if (activeView) {
 					const dropHandler = (event: DragEvent) => {
 						// console.log("drop", event);
-						if(this.settings.enableDragAndDrop){ // always enabled now
+						if (this.settings.enableDragAndDrop) { // always enabled now
 							this.handleDragEvent(event, activeView.editor);
 						} else {
 							// console.log("drag and drop is disabled");
@@ -279,18 +279,18 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// console.log("embedUrl", embedUrl);
 		// console.log("embedArguments", embedArguments);
 		const embedPdfArguments = parseEmbedPdfArguments(embedArguments);
-		if(embedPdfArguments.page){
+		if (embedPdfArguments.page) {
 			iframe.src = embedUrl + "&page=" + embedPdfArguments.page;
-		}else{
+		} else {
 			iframe.src = embedUrl;
 		}
 		iframe.classList.add("external-embed-pdf-iframe");
 		if (embedPdfArguments.width || embedPdfArguments.height) {
 			iframe.classList.add("external-embed-pdf-iframe-custom-size");
-			if(embedPdfArguments.width){
+			if (embedPdfArguments.width) {
 				iframe.style.setProperty("--iframe-width", embedPdfArguments.width);
 			}
-			if(embedPdfArguments.height){
+			if (embedPdfArguments.height) {
 				iframe.style.setProperty("--iframe-height", embedPdfArguments.height);
 			}
 		}
@@ -334,6 +334,66 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		element.appendChild(audio);
 	}
 
+	private embedFolder(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		// console.log("embedFolder", fullPath);
+		const folder = document.createElement("div");
+		folder.textContent = path.basename(fullPath);
+		folder.classList.add("external-embed-folder-header");
+		element.appendChild(folder);
+
+		const embedFolderArguments = parseEmbedFolderArguments(embedArguments);
+		// console.log("embedFolderArguments", embedFolderArguments);
+
+		// Create container for file list as UL element
+		const fileList = document.createElement("ul");
+		fileList.classList.add("external-embed-folder-list");
+
+		// Read directory contents
+		fs.readdir(fullPath, { withFileTypes: true }, (err, files) => {
+			if (err) {
+				const errorMsg = document.createElement("div");
+				errorMsg.textContent = `Error reading folder: ${err.message}`;
+				errorMsg.classList.add("external-embed-folder-error");
+				element.appendChild(errorMsg);
+				return;
+			}
+
+			// Filter files by extensions if specified
+			let filteredFiles = files;
+			if (embedFolderArguments.extensions) {
+				const allowedExtensions = embedFolderArguments.extensions.split(',').map(ext => ext.trim().toLowerCase());
+				filteredFiles = files.filter(file => {
+					const extension = path.extname(file.name).toLowerCase().slice(1);
+					return allowedExtensions.includes(extension);
+				});
+			}
+
+			// Sort files alphabetically
+			filteredFiles.sort((a, b) => a.name.localeCompare(b.name));
+
+			filteredFiles.forEach(file => {
+				const listItem = document.createElement("li");
+				const link = document.createElement("a");
+				link.href = "#";
+				link.textContent = file.name;
+
+				const fullFilePath = path.join(fullPath, file.name);
+				link.addEventListener("click", () => {
+					openFileWithDefaultProgram(fullFilePath, (error) => {
+						if (error) {
+							new Notice("Failed to open file: " + error.message);
+						}
+					});
+				});
+
+				listItem.appendChild(link);
+				fileList.appendChild(listItem);
+			});
+		});
+
+		element.appendChild(fileList);
+	}
+
 	private embedOther(fullpath: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		// Unsupported file type, display a link and modify onclick event
 		const link = document.createElement("a");
@@ -341,7 +401,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		link.textContent = path.basename(fullpath);
 		link.addEventListener("click", () => {
 			openFileWithDefaultProgram(fullpath, (error) => {
-				if(error){
+				if (error) {
 					new Notice("Failed to open file: " + error.message);
 				}
 			});
@@ -365,7 +425,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			// Modify its onclick event instead
 			el.addEventListener("click", () => {
 				openFileWithDefaultProgram(fullPath, (error) => {
-					if(error){
+					if (error) {
 						new Notice("Failed to open file: " + error.message);
 					}
 				});
@@ -380,7 +440,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			// Modify its onclick event instead
 			el.addEventListener("click", () => {
 				openFileWithDefaultProgram(fullPath, (error) => {
-					if(error){
+					if (error) {
 						new Notice("Failed to open file: " + error.message);
 					}
 				});
@@ -411,7 +471,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			//this.app.workspace.openLinkText(filePath, "", false);
 
 			openFileWithDefaultProgram(fullPath, (error) => {
-				if(error){
+				if (error) {
 					new Notice("Failed to open file: " + error.message);
 				}
 			});
@@ -427,9 +487,9 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		// create a header element to show the filename
 		const header = document.createElement("h2");
-		if(embedArguments === ''){
+		if (embedArguments === '') {
 			header.textContent = path.basename(fullPath);
-		}else{
+		} else {
 			header.textContent = path.basename(fullPath) + "#" + embedArguments;
 		}
 		element.appendChild(header);
@@ -440,7 +500,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// Using innerHTML, outerHTML or similar API's is a security risk. 
 		//Instead, use the DOM API or the Obsidian helper functions: https://docs.obsidian.md/Plugins/User+interface/HTML+elements
 		// element.innerHTML = htmlContent;
-		
+
 		const parser = new DOMParser();
 		const doc = parser.parseFromString(htmlContent, 'text/html');
 		const nodes = Array.from(doc.body.children);
@@ -479,6 +539,9 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		} else if (embedData.embedType === 'markdown') {
 			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${embedData.embedFilePath}`;
 			this.embedMarkdown(fullPath, embedData.embedArguments, element, context);
+		} else if (embedData.embedType === 'folder') {
+			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${embedData.embedFilePath}`;
+			this.embedFolder(fullPath, embedData.embedArguments, element, context);
 		} else {
 			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${filePath}`;
 			this.embedOther(fullPath, element, context);
@@ -504,11 +567,11 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	
+
 
 	private async showFilePickerAndCreateEmbed(
-		editor: Editor, 
-		baseDir: string, 
+		editor: Editor,
+		baseDir: string,
 		createEmbedFn: (editor: Editor, relativePath: string) => void
 	) {
 		// @ts-ignore
@@ -516,7 +579,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// const ImageExtensionsWithoutDot = ImageExtensions.map(ext => ext.substring(1));
 		// const VideoExtensionsWithoutDot = VideoExtensions.map(ext => ext.substring(1));
 		// const AudioExtensionsWithoutDot = AudioExtensions.map(ext => ext.substring(1));
-		
+
 		const result = await remote.dialog.showOpenDialog({
 			properties: ['openFile', 'multiSelections'],
 			filters: [
@@ -531,7 +594,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		if (!result.canceled && result.filePaths.length > 0) {
 			const filePaths = result.filePaths;
 			// console.log("Selected files:", filePaths);
-			
+
 			filePaths.forEach((filePath: string) => {
 				const relativePath = getRelativePath(baseDir, filePath);
 				createEmbedFn(editor, relativePath);

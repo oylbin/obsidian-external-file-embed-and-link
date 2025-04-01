@@ -84,6 +84,19 @@ Videos/test.mp4|800x600
 ```
 ~~~
 
+#### Folders
+
+You can embed a folder, and it will list all the files in the folder.
+You can also add parameters after `#` to filter the files to embed.
+
+
+~~~markdown
+```EmbedRelativeToHome
+Downloads/#extensions=pdf,mp4
+```
+~~~
+
+
 ### External File Links
 
 If you don't need to render the file content in Reading Mode, you can create links to external files:

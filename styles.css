@@ -9,6 +9,7 @@ If your plugin does not need CSS, delete this file.
 .external-embed-pdf-iframe {
 	border: none;
 }
+
 .external-embed-pdf-iframe-custom-size {
 	width: var(--iframe-width);
 	height: var(--iframe-height);
@@ -17,4 +18,34 @@ If your plugin does not need CSS, delete this file.
 .external-embed-markdown-element {
 	border: 1px solid gray;
 	padding: 10px;
+}
+
+.external-embed-folder-header {
+	font-weight: bold;
+	margin-bottom: 8px;
+}
+
+.external-embed-folder-list {
+	list-style-type: disc;
+	padding-left: 20px;
+	margin-top: 8px;
+}
+
+.external-embed-folder-list li {
+	margin: 4px 0;
+	padding: 2px 0;
+}
+
+.external-embed-folder-list a {
+	text-decoration: none;
+	color: var(--text-normal);
+}
+
+.external-embed-folder-list a:hover {
+	text-decoration: underline;
+}
+
+.external-embed-folder-error {
+	color: var(--text-error);
+	margin-top: 8px;
 }

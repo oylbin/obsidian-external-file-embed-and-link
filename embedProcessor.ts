@@ -2,8 +2,8 @@ import * as path from "path";
 import { ImageExtensions, isAudio, isImage, isMarkdown, isPDF, isVideo, MarkdownExtensions, VideoExtensions } from "utils";
 
 export class EmbedData {
-	embedType : 'pdf' | 'image' | 'markdown' | 'audio' | 'video' | 'other';
-	embedArguments : string;
+	embedType: 'pdf' | 'image' | 'markdown' | 'audio' | 'video' | 'other' | 'folder';
+	embedArguments: string;
 	embedFilePath: string;
 }
 
@@ -18,6 +18,22 @@ export class EmbedPdfArguments {
 	height = '80vh';
 }
 
+export class EmbedFolderArguments {
+	extensions = ''; // can filter files by extensions, separated by comma, eg. pdf,txt
+}
+
+export function parseEmbedFolderArguments(embedArguments: string): EmbedFolderArguments {
+	const embedFolderArguments = new EmbedFolderArguments();
+	const params = embedArguments.split('&');
+	for (const param of params) {
+		const [key, value] = param.split('=');
+		if (key === 'extensions') {
+			embedFolderArguments.extensions = value;
+		}
+	}
+	return embedFolderArguments;
+}
+
 export function parseEmbedPdfArguments(embedArguments: string): EmbedPdfArguments {
 	const embedPdfArguments = new EmbedPdfArguments();
 	// embedArguments can be in the following forms
@@ -25,15 +41,15 @@ export function parseEmbedPdfArguments(embedArguments: string): EmbedPdfArgument
 	// Parameters are optional and may not appear in any order.
 	// However, parameters are in key=value format and separated by &.
 	const params = embedArguments.split('&');
-	for(const param of params) {
+	for (const param of params) {
 		const [key, value] = param.split('=');
-		if(key === 'width') {
+		if (key === 'width') {
 			embedPdfArguments.width = value;
 		}
-		if(key === 'height') {
+		if (key === 'height') {
 			embedPdfArguments.height = value;
 		}
-		if(key === 'page') {
+		if (key === 'page') {
 			embedPdfArguments.page = parseInt(value);
 		}
 	}
@@ -49,7 +65,7 @@ export function parseEmbedArgumentWidthHeight(embedArguments: string): EmbedArgu
 	if (dimensionMatch) {
 		embedArgumentWidthHeight.width = parseInt(dimensionMatch[1]);
 		if (dimensionMatch[2]) {
-			embedArgumentWidthHeight.height = parseInt(dimensionMatch[2]); 
+			embedArgumentWidthHeight.height = parseInt(dimensionMatch[2]);
 		}
 	}
 	return embedArgumentWidthHeight;
@@ -79,7 +95,19 @@ export function parseEmbedData(inputLine: string): EmbedData {
 	
 	*/
 	// FIXME I think use regex is better
-	if(lowerCaseNameWithArguments.includes(".pdf#")) {
+	//console.log(lowerCaseNameWithArguments)
+	//console.log(lowerCaseNameWithArguments.startsWith("#"))
+	if (lowerCaseNameWithArguments.startsWith("#")) {
+		const embedType = 'folder';
+		const embedArguments = lowerCaseNameWithArguments.split('#')[1];
+		const embedFilePath = inputLine.substring(0, inputLine.length - embedArguments.length - 1);
+		return {
+			embedType,
+			embedArguments,
+			embedFilePath,
+		};
+	}
+	if (lowerCaseNameWithArguments.includes(".pdf#")) {
 		const embedType = 'pdf';
 		// TODO This is an inexact implementation, not considering the case where the file name contains #.
 		const embedArguments = lowerCaseNameWithArguments.split('.pdf#')[1];
@@ -92,13 +120,13 @@ export function parseEmbedData(inputLine: string): EmbedData {
 		};
 	}
 	// for each of the extensions in MarkdownExtensions
-	for(const ext of MarkdownExtensions) {
+	for (const ext of MarkdownExtensions) {
 		const mark = ext + "#";
-		if(lowerCaseNameWithArguments.includes(mark)) {
+		if (lowerCaseNameWithArguments.includes(mark)) {
 			const embedType = 'markdown';
 			// can not use lowerCaseNameWithArguments as it have header name which will be used as embedArguments
 			const embedArguments0 = lowerCaseNameWithArguments.split(mark)[1];
-			const embedFilePath = inputLine.substring(0, inputLine.length - embedArguments0.length -1);
+			const embedFilePath = inputLine.substring(0, inputLine.length - embedArguments0.length - 1);
 			const embedArguments = inputLine.substring(embedFilePath.length + 1);
 			// console.log("inputLine", inputLine);
 			// console.log("embedArguments", embedArguments);
@@ -110,9 +138,9 @@ export function parseEmbedData(inputLine: string): EmbedData {
 			};
 		}
 	}
-	for(const ext of ImageExtensions) {
+	for (const ext of ImageExtensions) {
 		const mark = ext + "|";
-		if(lowerCaseNameWithArguments.includes(mark)) {
+		if (lowerCaseNameWithArguments.includes(mark)) {
 			const embedType = 'image';
 			const embedArguments = lowerCaseNameWithArguments.split(mark)[1];
 			const embedFilePath = inputLine.substring(0, inputLine.length - embedArguments.length - 1);
@@ -123,9 +151,9 @@ export function parseEmbedData(inputLine: string): EmbedData {
 			};
 		}
 	}
-	for(const ext of VideoExtensions) {
+	for (const ext of VideoExtensions) {
 		const mark = ext + "|";
-		if(lowerCaseNameWithArguments.includes(mark)) {
+		if (lowerCaseNameWithArguments.includes(mark)) {
 			const embedType = 'video';
 			const embedArguments = lowerCaseNameWithArguments.split(mark)[1];
 			const embedFilePath = inputLine.substring(0, inputLine.length - embedArguments.length - 1);
@@ -138,7 +166,7 @@ export function parseEmbedData(inputLine: string): EmbedData {
 	}
 
 	// ok, now is file without any embed arguments
-	if(isImage(inputLine)) {
+	if (isImage(inputLine)) {
 		const embedType = 'image';
 		const embedFilePath = inputLine;
 		return {
@@ -147,7 +175,7 @@ export function parseEmbedData(inputLine: string): EmbedData {
 			embedFilePath,
 		};
 	}
-	if(isVideo(inputLine)) {
+	if (isVideo(inputLine)) {
 		const embedType = 'video';
 		const embedFilePath = inputLine;
 		return {
@@ -156,7 +184,7 @@ export function parseEmbedData(inputLine: string): EmbedData {
 			embedFilePath,
 		};
 	}
-	if(isAudio(inputLine)) {
+	if (isAudio(inputLine)) {
 		const embedType = 'audio';
 		const embedFilePath = inputLine;
 		return {
@@ -165,7 +193,7 @@ export function parseEmbedData(inputLine: string): EmbedData {
 			embedFilePath,
 		};
 	}
-	if(isPDF(inputLine)) {
+	if (isPDF(inputLine)) {
 		const embedType = 'pdf';
 		const embedFilePath = inputLine;
 		return {
@@ -174,7 +202,7 @@ export function parseEmbedData(inputLine: string): EmbedData {
 			embedFilePath,
 		};
 	}
-	if(isMarkdown(inputLine)) {
+	if (isMarkdown(inputLine)) {
 		const embedType = 'markdown';
 		const embedFilePath = inputLine;
 		return {
