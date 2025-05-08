@@ -4,9 +4,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { httpRequestHandler, findAvailablePort, CrossComputerLinkContext } from './server';
 import { openFileWithDefaultProgram, getRelativePath, extractHeaderSection } from './utils';
-import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction } from './settings';
+import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction, DirectoryConfigManager, DirectoryConfigManagerImpl } from './settings';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedFolderArguments, parseEmbedPdfArguments } from './embedProcessor';
-
+import { getLocalMachineId } from './local-settings';
 
 export default class CrossComputerLinkPlugin extends Plugin {
 	settings: CrossComputerLinkPluginSettings;
@@ -15,6 +15,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	server: http.Server | null;
 	private cleanupDropHandler: (() => void) | null = null;
 	context: CrossComputerLinkContext;
+	directoryConfigManager: DirectoryConfigManager;
 
 
 	insertText(editor: Editor, text: string) {
@@ -168,10 +169,9 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		this.startHttpServer();
 
-		if (Platform.isMacOS || Platform.isWin) {
-			// only macos and windows support drag and drop currently, that need settings
-			this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this));
-		}
+		const localMachineId = await getLocalMachineId(this.manifest.id);
+		this.directoryConfigManager = new DirectoryConfigManagerImpl(this, localMachineId);
+		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.directoryConfigManager, localMachineId));
 
 		this.addCommand({
 			id: 'add-external-embed-relative-to-home',

@@ -1,6 +1,6 @@
 import CrossComputerLinkPlugin from 'main';
-import { App, Platform, PluginSettingTab, Setting, TextComponent, ButtonComponent } from 'obsidian';
-
+import { App, Platform, PluginSettingTab, Setting, TextComponent, ButtonComponent, Notice } from 'obsidian';
+import { existsSync } from 'fs';
 export enum DragAction {
     Default = 'default',
     LinkRelativeToHome = 'LinkRelativeToHome',
@@ -11,18 +11,20 @@ export enum DragAction {
     InlineLinkRelativeToVault = 'InlineLinkRelativeToVault'
 }
 
+
+
 export interface CustomDirectoryConfig {
-    id: string;
-    directory: string;
-    sync: boolean;
+    directory: string | null;					// 如果为 null，则表示该配置项是在不同的机器上有不同的配置，需要读取 directories
+    directories: Record<string, string> | null;	// 如果为 null，则表示该配置项是在不同的机器上是相同的配置，需要读取 directory
 }
+type CustomDirectoryMap = Record<string, CustomDirectoryConfig>;
 
 export interface CrossComputerLinkPluginSettings {
     dragWithCtrl: DragAction;
     dragWithShift: DragAction;
     dragWithCtrlShift: DragAction;
     enableDragAndDrop: boolean;
-    customDirectories: CustomDirectoryConfig[];
+    customDirectories: CustomDirectoryMap;
 }
 
 export const DEFAULT_SETTINGS: CrossComputerLinkPluginSettings = {
@@ -30,18 +32,181 @@ export const DEFAULT_SETTINGS: CrossComputerLinkPluginSettings = {
     dragWithShift: DragAction.InlineLinkRelativeToHome,
     dragWithCtrlShift: DragAction.EmbedRelativeToHome,
     enableDragAndDrop: true,
-    customDirectories: []
+    customDirectories: {}
 }
+
+class DirectoryConfigForSettingPage {
+	id: string;
+	directory: string;
+	sync: boolean;
+	showDelete: boolean;
+	type: 'Predefined' | 'Custom';
+}
+
+
+
+export interface DirectoryConfigManager {
+	getDirectoryById(id: string): string | null;
+	deleteDirectoryById(id: string): Promise<void>;
+	addDirectory(id: string, directory: string, sync: boolean): Promise<void>;
+	getAllDirectories(): DirectoryConfigForSettingPage[];
+}
+
+
+export class DirectoryConfigManagerImpl implements DirectoryConfigManager {
+	private directories: Record<string, DirectoryConfigForSettingPage>;
+	private localMachineId: string;
+	constructor(private plugin: CrossComputerLinkPlugin, localMachineId: string) {
+		this.localMachineId = localMachineId;
+		this.updateDirectoriesFromSettings();
+	}
+
+	private updateDirectoriesFromSettings(){
+		this.directories = {};
+		this.directories['home'] = {
+			id: 'home',
+			directory: this.plugin.context.homeDirectory,
+			sync: false,
+			showDelete: false,
+			type: 'Predefined'
+		};
+		this.directories['vault'] = {
+			id: 'vault',
+			directory: this.plugin.context.vaultDirectory,
+			sync: false,
+			showDelete: false,
+			type: 'Predefined'
+		};
+
+		if(this.plugin.settings.customDirectories){
+			Object.entries(this.plugin.settings.customDirectories).forEach(([key, config]) => {
+				if(config.directories === null){
+					this.directories[key] = {
+						id: key,
+						directory: config.directory || "",
+						sync: true,
+						showDelete: true,
+						type: 'Custom'
+					};
+				}else{
+					Object.entries(config.directories).forEach(([machineId, directory]) => {
+						console.log(key, machineId, directory);
+					});
+					Object.entries(config.directories).forEach(([machineId, directory]) => {
+						if(machineId === this.localMachineId){
+							this.directories[key] = {
+								id: key,
+								directory: directory,
+								sync: false,
+								showDelete: true,
+								type: 'Custom'
+							};
+						}
+					});
+				}
+			});
+		}
+	}
+
+	getDirectoryById(id: string): string | null {
+		return this.directories[id]?.directory || null;
+	}
+
+	async deleteDirectoryById(id: string): Promise<void> {
+		const existingConfig =  this.plugin.settings.customDirectories[id];
+		if(existingConfig.directories === null){
+			delete this.plugin.settings.customDirectories[id];
+		}else{
+			delete existingConfig.directories[this.localMachineId];
+			if(Object.keys(existingConfig.directories).length === 0){
+				delete this.plugin.settings.customDirectories[id];
+			}
+		}
+		await this.plugin.saveSettings();
+		this.updateDirectoriesFromSettings();
+	}
+
+	async addDirectory(id: string, directory: string, syncValue: boolean): Promise<void> {
+
+		id = id.trim().toLowerCase();
+		directory = directory.trim();
+
+		if(id === 'home' || id === 'vault'){
+			throw new Error("Please enter a valid ID, home and vault are predefined");
+		}
+
+		if(!/^[a-zA-Z][a-zA-Z0-9]*$/.test(id)){
+			throw new Error("Please enter a valid ID, only letters and numbers are allowed, and the first character must be a letter, " + id + " is not a valid ID");
+		}
+
+		if(!directory){
+			throw new Error("Please enter a valid directory path");
+		}
+		
+		if(!existsSync(directory)){
+			throw new Error("Please enter a valid directory path, " + directory + " does not exist");
+		}
+
+		if(this.plugin.settings.customDirectories[id]){
+			const existingConfig = this.plugin.settings.customDirectories[id];
+			if(existingConfig.directory !== null){
+				// this is a sync directory, so we can not add a new directory to it
+				throw new Error("Please enter a valid ID, " + id + " already exists and points to " + existingConfig.directory);
+			}
+			if(existingConfig.directories === null){
+				// this is a local directory, so we can add a new directory to it
+				existingConfig.directories = {};
+				existingConfig.directories[this.localMachineId] = directory;
+			}else{
+				if (existingConfig.directories[this.localMachineId]){
+					// this is a local directory, with local machine id already exists
+					throw new Error("Please enter a valid ID, " + id + " already exists and points to " + existingConfig.directories[this.localMachineId]);
+				}
+				existingConfig.directories[this.localMachineId] = directory;
+			}
+		}else{
+			if(!syncValue){
+				this.plugin.settings.customDirectories[id] = {
+					directory : null,
+					directories: {
+						[this.localMachineId]: directory
+					}
+				};
+			}else{
+				this.plugin.settings.customDirectories[id] = {
+					directory : directory,
+					directories: null
+				};
+			}
+		}
+
+		console.log(this.plugin.settings.customDirectories);
+
+		await this.plugin.saveSettings();
+		this.updateDirectoriesFromSettings();
+	}
+
+	getAllDirectories(): DirectoryConfigForSettingPage[] {
+		
+		return Object.values(this.directories);
+	}
+}
+
 
 export class CrossComputerLinkSettingTab extends PluginSettingTab {
     plugin: CrossComputerLinkPlugin;
+	directoryConfigManager: DirectoryConfigManager;
+	localMachineId: string;
 
-    constructor(app: App, plugin: CrossComputerLinkPlugin) {
+    constructor(app: App, plugin: CrossComputerLinkPlugin, directoryConfigManager: DirectoryConfigManager, localMachineId: string) {
         super(app, plugin);
         this.plugin = plugin;
+		this.directoryConfigManager = directoryConfigManager;
+		this.localMachineId = localMachineId;
     }
 
     display(): void {
+		console.log("display");
         const { containerEl } = this;
         containerEl.empty();
 
@@ -113,7 +278,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
         const tbody = table.createEl('tbody');
 
         // Add predefined directories
-        const addDirectoryRow = (type: string, id: string, path: string, sync: boolean = false, showDelete: boolean = false) => {
+        const addDirectoryRow = (type: string, id: string, path: string, sync = false, showDelete = false) => {
             const row = tbody.createEl('tr');
             
             // Type column
@@ -127,19 +292,19 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
             
             // Sync column
             const syncCell = row.createEl('td');
-            if (type === 'Custom') {
-                new Setting(syncCell)
-                    .addToggle(toggle => toggle
-                        .setValue(sync)
-                        .onChange(async (value) => {
-                            const config = this.plugin.settings.customDirectories.find(dir => dir.id === id);
-                            if (config) {
-                                config.sync = value;
-                                await this.plugin.saveSettings();
-                            }
-                        }));
-            }
-            
+            // if (type === 'Custom') {
+            //     new Setting(syncCell)
+            //         .addToggle(toggle => toggle
+            //             .setValue(sync)
+            //             .onChange(async (value) => {
+            //                 const config = this.plugin.settings.customDirectories.find(dir => dir.id === id);
+            //                 if (config) {
+            //                     config.sync = value;
+            //                     await this.plugin.saveSettings();
+            //                 }
+            //             }));
+            // }
+            syncCell.createEl('span', { text: (id === 'home' || id === 'vault') ? '' : (sync ? 'Yes' : 'No' )});
             // Action column
             const actionCell = row.createEl('td');
             if (showDelete) {
@@ -148,25 +313,17 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
                         .setIcon('trash')
                         .setTooltip('Delete')
                         .onClick(async () => {
-                            const index = this.plugin.settings.customDirectories.findIndex(dir => dir.id === id);
-                            if (index !== -1) {
-                                this.plugin.settings.customDirectories.splice(index, 1);
-                                await this.plugin.saveSettings();
-                                this.display(); // Refresh the settings tab
-                            }
+							await this.directoryConfigManager.deleteDirectoryById(id);
+							this.display();
                         }));
             }
         };
 
-        // Add predefined directories
-        addDirectoryRow('Predefined', 'home', this.plugin.context.homeDirectory);
-        addDirectoryRow('Predefined', 'vault', this.plugin.context.vaultDirectory);
+		this.directoryConfigManager.getAllDirectories().forEach((config) => {
+			addDirectoryRow(config.type, config.id, config.directory, config.sync, config.showDelete);
+		});
 
         // Add custom directories
-        this.plugin.settings.customDirectories.forEach(config => {
-            addDirectoryRow('Custom', config.id, config.directory, config.sync, true);
-        });
-
         // Add new custom directory form
         const addNewDirectorySetting = new Setting(containerEl)
             .setName('Add New Directory')
@@ -180,42 +337,26 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
             .setPlaceholder('Directory Path')
             .setValue('');
 
-        const syncToggle = new Setting(addNewDirectorySetting.controlEl)
+		let syncValue = false;
+        new Setting(addNewDirectorySetting.controlEl)
             .setName('Sync across computers')
             .addToggle(toggle => toggle
-                .setValue(false)
+                .setValue(syncValue)
                 .onChange(async (value) => {
-                    // Handle sync toggle change
+					syncValue = value;
                 }));
 
-        const addButton = new ButtonComponent(addNewDirectorySetting.controlEl)
+        new ButtonComponent(addNewDirectorySetting.controlEl)
             .setButtonText('Add')
             .onClick(async () => {
-                const id = idInput.getValue().trim();
-                const directory = directoryInput.getValue().trim();
-                
-                if (!id || !directory) {
-                    return;
-                }
-
-                // Check if ID already exists
-                if (this.plugin.settings.customDirectories.some(dir => dir.id === id)) {
-                    return;
-                }
-
-                const syncInput = syncToggle.controlEl.querySelector('input');
-                if (!syncInput) {
-                    return;
-                }
-
-                this.plugin.settings.customDirectories.push({
-                    id,
-                    directory,
-                    sync: syncInput.checked
-                });
-
-                await this.plugin.saveSettings();
-                this.display(); // Refresh the settings tab
+				try {
+					const id = idInput.getValue().trim();
+					const directory = directoryInput.getValue().trim();
+					await this.directoryConfigManager.addDirectory(id, directory, syncValue);
+					this.display(); // Refresh the settings tab
+				} catch (error) {
+					new Notice(error.message);
+				}
             });
     }
 }
