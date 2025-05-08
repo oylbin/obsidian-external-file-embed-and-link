@@ -203,10 +203,15 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
                     return;
                 }
 
+                const syncInput = syncToggle.controlEl.querySelector('input');
+                if (!syncInput) {
+                    return;
+                }
+
                 this.plugin.settings.customDirectories.push({
                     id,
                     directory,
-                    sync: syncToggle.controlEl.querySelector('input').checked
+                    sync: syncInput.checked
                 });
 
                 await this.plugin.saveSettings();

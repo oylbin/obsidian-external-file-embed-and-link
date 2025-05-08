@@ -1,6 +1,11 @@
 {
 	"compilerOptions": {
 		"baseUrl": ".",
+		"paths": {
+			"*": [
+				"src/*"
+			]
+		},
 		"inlineSourceMap": true,
 		"inlineSources": true,
 		"module": "ESNext",
@@ -13,16 +18,19 @@
 		"strictNullChecks": true,
 		"typeRoots": [
 			"./node_modules/@types",
-			"./types"
+			"./types",
+			"./src/types"
 		],
 		"lib": [
 			"DOM",
 			"ES5",
 			"ES6",
 			"ES7"
-		]
+		],
+		"rootDir": "src"
 	},
 	"include": [
-		"**/*.ts"
+		"src/**/*.ts",
+		"src/types/**/*.d.ts"
 	]
 }

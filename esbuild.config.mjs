@@ -16,7 +16,7 @@ const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ["main.ts"],
+	entryPoints: ["src/main.ts"],
 	bundle: true,
 	external: [
 		"obsidian",
@@ -41,7 +41,11 @@ const context = await esbuild.context({
 	outfile: "main.js",
 	plugins: [
 		// Always include this plugin before others
-		inlineImportPlugin()    
+		inlineImportPlugin({
+			baseDir: process.cwd(),
+			filter: /^inline:/,
+			transform: (content) => content
+		})    
 	],
 	minify: prod,
 });

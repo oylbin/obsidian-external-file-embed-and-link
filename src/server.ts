@@ -2,7 +2,7 @@ import * as http from 'http';
 import * as net from 'net';
 import * as path from 'path';
 import * as fs from 'fs';
-import { getContentType, openFileWithDefaultProgram, parseUrlParams } from 'utils';
+import { getContentType, openFileWithDefaultProgram, parseUrlParams } from './utils';
 
 import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
 import pdf_min_js from 'inline:./assets/pdf.js';

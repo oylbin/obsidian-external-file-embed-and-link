@@ -4,6 +4,9 @@ dev:
 build:
 	npm run build
 
+clean:
+	npm run clean
+
 install:
 	mkdir -p ~/SynologyDrive/AppDataSync/obsidian/.obsidian/plugins/external-file-embed-and-link
 	cp main.js ~/SynologyDrive/AppDataSync/obsidian/.obsidian/plugins/external-file-embed-and-link
