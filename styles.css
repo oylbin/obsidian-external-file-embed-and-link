@@ -91,3 +91,34 @@ If your plugin does not need CSS, delete this file.
 .directory-table td .setting-item-control {
     justify-content: flex-start;
 }
+
+.commands-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+}
+
+.commands-table th,
+.commands-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.commands-table th {
+    font-weight: bold;
+    background-color: var(--background-secondary);
+}
+
+.commands-table tr:hover {
+    background-color: var(--background-secondary);
+}
+
+.commands-table td .setting-item {
+    padding: 0;
+    border: none;
+}
+
+.commands-table td .setting-item-control {
+    justify-content: flex-start;
+}

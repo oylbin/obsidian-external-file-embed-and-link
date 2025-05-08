@@ -173,55 +173,59 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.directoryConfigManager = new DirectoryConfigManagerImpl(this, localMachineId);
 		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.directoryConfigManager, localMachineId));
 
-		this.addCommand({
-			id: 'add-external-embed-relative-to-home',
-			name: 'Add external embed relative to home',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(
-					editor,
-					this.context.homeDirectory,
-					this.createEmbedRelativeToHome.bind(this)
-				);
-			}
-		});
-		this.addCommand({
-			id: 'add-external-link-relative-to-home',
-			name: 'Add external link relative to home',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(editor, this.context.homeDirectory, this.createLinkRelativeToHome.bind(this));
-			}
-		});
-		this.addCommand({
-			id: 'add-external-inline-link-relative-to-home',
-			name: 'Add external inline link relative to home',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(editor, this.context.homeDirectory, this.createInlineLinkRelativeToHome.bind(this));
-			}
-		});
-
-		this.addCommand({
-			id: 'add-external-embed-relative-to-vault',
-			name: 'Add external embed relative to vault',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(
-					editor,
-					this.context.vaultDirectory,
-					this.createEmbedRelativeToVault.bind(this)
-				);
-			}
-		});
-		this.addCommand({
-			id: 'add-external-link-relative-to-vault',
-			name: 'Add external link relative to vault',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(editor, this.context.vaultDirectory, this.createLinkRelativeToVault.bind(this));
-			}
-		});
-		this.addCommand({
-			id: 'add-external-inline-link-relative-to-vault',
-			name: 'Add external inline link relative to vault',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.showFilePickerAndCreateEmbed(editor, this.context.vaultDirectory, this.createInlineLinkRelativeToVault.bind(this));
+		// Register commands based on settings
+		this.settings.commands.forEach(command => {
+			if (command.enabled) {
+				this.addCommand({
+					id: command.id,
+					name: command.name,
+					editorCallback: (editor: Editor, view: MarkdownView) => {
+						switch (command.id) {
+							case 'add-external-embed-relative-to-home':
+								this.showFilePickerAndCreateEmbed(
+									editor,
+									this.context.homeDirectory,
+									this.createEmbedRelativeToHome.bind(this)
+								);
+								break;
+							case 'add-external-link-relative-to-home':
+								this.showFilePickerAndCreateEmbed(
+									editor,
+									this.context.homeDirectory,
+									this.createLinkRelativeToHome.bind(this)
+								);
+								break;
+							case 'add-external-inline-link-relative-to-home':
+								this.showFilePickerAndCreateEmbed(
+									editor,
+									this.context.homeDirectory,
+									this.createInlineLinkRelativeToHome.bind(this)
+								);
+								break;
+							case 'add-external-embed-relative-to-vault':
+								this.showFilePickerAndCreateEmbed(
+									editor,
+									this.context.vaultDirectory,
+									this.createEmbedRelativeToVault.bind(this)
+								);
+								break;
+							case 'add-external-link-relative-to-vault':
+								this.showFilePickerAndCreateEmbed(
+									editor,
+									this.context.vaultDirectory,
+									this.createLinkRelativeToVault.bind(this)
+								);
+								break;
+							case 'add-external-inline-link-relative-to-vault':
+								this.showFilePickerAndCreateEmbed(
+									editor,
+									this.context.vaultDirectory,
+									this.createInlineLinkRelativeToVault.bind(this)
+								);
+								break;
+						}
+					}
+				});
 			}
 		});
 
