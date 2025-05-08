@@ -7,6 +7,7 @@ import { getContentType, openFileWithDefaultProgram, parseUrlParams } from './ut
 import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
 import pdf_min_js from 'inline:./assets/pdf.js';
 import pdf_worker_min_js from 'inline:./assets/pdf.worker.js';
+import { DirectoryConfigManager } from 'settings';
 
 const PDF_HTML_TEMPLATE = `
 <!DOCTYPE html>
@@ -149,6 +150,7 @@ export class CrossComputerLinkContext {
 	vaultDirectory: string;
 	port: number;
 	pluginDirectory: string;
+	directoryConfigManager: DirectoryConfigManager;
 }
 
 export function getTemplate(extname: string) {
@@ -192,21 +194,28 @@ export function findAvailablePort(startPort: number): Promise<number> {
 
 
 function getFilePathFromUrl(url: string, context: CrossComputerLinkContext) {
+
+	// url should be in the following format:
+	// /download/{directoryId}?p={encodedFilePath}
+	// /open/{directoryId}?p={encodedFilePath}
+	// /embed/{directoryId}?p={encodedFilePath}
+
 	// console.log("getFilePathFromUrl", url);
 	const [urlWithoutParams, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
 	// console.log("urlWithoutParams", urlWithoutParams);
 	// console.log("parsedParams", parsedParams);
-	if(urlWithoutParams.startsWith("/download/home") || urlWithoutParams.startsWith("/open/home") || urlWithoutParams.startsWith("/embed/home")) {
-		const decodedPath = decodeURIComponent(parsedParams.p);
-		const filePath = path.join(context.homeDirectory, decodedPath);
-		return filePath;
-	} else if(urlWithoutParams.startsWith("/download/vault") || urlWithoutParams.startsWith("/open/vault") || urlWithoutParams.startsWith("/embed/vault")) {
-		const decodedPath = decodeURIComponent(parsedParams.p);
-		const filePath = path.join(context.vaultDirectory, decodedPath);
-		return filePath;
+
+	const directoryId = urlWithoutParams.split('/')[2];
+	const decodedPath = decodeURIComponent(parsedParams.p);
+
+	const directoryPath = context.directoryConfigManager.getDirectoryById(directoryId);
+	if(!directoryPath) {
+		throw new Error("Invalid directory id: " + directoryId);
 	}
-	throw new Error("Invalid url: " + url);
+
+	const filePath = path.join(directoryPath, decodedPath);
+	return filePath;
 }
 export function embedRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -336,30 +345,38 @@ function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.S
 		res.end(`Invalid path ${url}`);
 	}
 }
+
+function errorResponse(res: http.ServerResponse, code: number, message: string) {
+	res.writeHead(code);
+	res.end(message);
+}
 export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	// console.log("httpRequestHandler", req.url);
 	// Read file content and return it via http response
 	const url = req.url;
 	if(!url) {
-		res.writeHead(404);
-		res.end("Invalid path");
-		return;
+		return errorResponse(res, 404, "Invalid path");
 	}
-	if(url.startsWith("/embed/")) {
-		embedRequestHandler(url, req, res, context);
-		return;
-	}else if(url.startsWith("/download/")) {
-		downloadRequestHandler(url, req, res, context);
-		return;
-	}else if(url.startsWith("/open/")) {
-		openRequestHandler(url, req, res, context);
-		return;
-	}else if(url.startsWith("/assets/")) {
-		assetRequestHandler(url, req, res, context);
-		return;
+	try{
+		if(url.startsWith("/embed/")) {
+			embedRequestHandler(url, req, res, context);
+			return;
+		}else if(url.startsWith("/download/")) {
+			downloadRequestHandler(url, req, res, context);
+			return;
+		}else if(url.startsWith("/open/")) {
+			openRequestHandler(url, req, res, context);
+			return;
+		}else if(url.startsWith("/assets/")) {
+			assetRequestHandler(url, req, res, context);
+			return;
+		}
+	}catch(error){
+		console.error("Error in httpRequestHandler", error);
+		return errorResponse(res, 500, `Internal error: ${error}`);
 	}
-	res.writeHead(404);
-	res.end(`Invalid path ${url}`);
+
+	return errorResponse(res, 404, `Invalid path ${url}`);
 
 }
 

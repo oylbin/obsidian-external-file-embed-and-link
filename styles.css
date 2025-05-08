@@ -122,3 +122,8 @@ If your plugin does not need CSS, delete this file.
 .commands-table td .setting-item-control {
     justify-content: flex-start;
 }
+
+.external-embed-error {
+	color: var(--text-error);
+	margin-top: 8px;
+}

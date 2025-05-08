@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { httpRequestHandler, findAvailablePort, CrossComputerLinkContext } from './server';
 import { openFileWithDefaultProgram, getRelativePath, extractHeaderSection } from './utils';
-import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction, DirectoryConfigManager, DirectoryConfigManagerImpl } from './settings';
+import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction, DirectoryConfigManagerImpl } from './settings';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedFolderArguments, parseEmbedPdfArguments } from './embedProcessor';
 import { getLocalMachineId } from './local-settings';
 
@@ -15,7 +15,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	server: http.Server | null;
 	private cleanupDropHandler: (() => void) | null = null;
 	context: CrossComputerLinkContext;
-	directoryConfigManager: DirectoryConfigManager;
 
 
 	insertText(editor: Editor, text: string) {
@@ -170,8 +169,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.startHttpServer();
 
 		const localMachineId = await getLocalMachineId(this.manifest.id);
-		this.directoryConfigManager = new DirectoryConfigManagerImpl(this, localMachineId);
-		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.directoryConfigManager, localMachineId));
+		this.context.directoryConfigManager = new DirectoryConfigManagerImpl(this, localMachineId);
+		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.context.directoryConfigManager, localMachineId));
 
 		// Register commands based on settings
 		this.settings.commands.forEach(command => {
@@ -269,6 +268,10 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		});
 		this.registerMarkdownCodeBlockProcessor("EmbedRelativeToVault", (source, el, ctx) => {
 			this.processCodeBlockEmbed("vault", source, el, ctx);
+		});
+
+		this.registerMarkdownCodeBlockProcessor("EmbedRelativeTo", (source, el, ctx) => {
+			this.processEmbedRelativeTo(source, el, ctx);
 		});
 
 		this.registerMarkdownPostProcessor((element, context) => {
@@ -413,6 +416,23 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		element.appendChild(link);
 	}
 
+	private embedError(errorMessage: string[] | string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const errorDiv = document.createElement("div");
+		if (Array.isArray(errorMessage)) {
+			errorMessage.forEach(msg => {
+				const errorMsg = document.createElement("p");
+				errorMsg.textContent = msg;
+				errorDiv.appendChild(errorMsg);
+			});
+		} else {
+			const errorMsg = document.createElement("div");
+			errorMsg.textContent = errorMessage;
+			errorDiv.appendChild(errorMsg);
+		}
+		errorDiv.classList.add("external-embed-error");
+		element.appendChild(errorDiv);
+	}
+
 
 	private processInlineLink(
 		element: HTMLElement,
@@ -515,9 +535,20 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		element.classList.add("external-embed-markdown-element");
 	}
 
-	private processCodeBlockEmbed(relativeTo: "home" | "vault", source: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+	private processCodeBlockEmbed(directoryId: string, relativePath: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+
+		const direcotryPath = this.context.directoryConfigManager.getDirectoryById(directoryId);
+		if (!direcotryPath) {
+			const errorMessage = [
+				`Can not embed file from "${directoryId}://${relativePath}"`,
+				`You need to set the directory path for "${directoryId}" in the plugin settings.`
+			];
+			this.embedError(errorMessage, element, context);
+			return;
+		}
+
 		// Parse path
-		let filePath = source.trim();
+		let filePath = relativePath.trim();
 		if (filePath.startsWith("/")) {
 			filePath = filePath.substring(1);
 		}
@@ -529,10 +560,10 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		const embedData = parseEmbedData(filePath);
 		// console.log("embedData", embedData);
 		// check if filename contains '|', the text after '|' is the embed arguments
-		const fileUrl = `http://127.0.0.1:${this.context.port}/download/${relativeTo === "home" ? "home" : "vault"}?p=${embedData.embedFilePath}`;
+		const fileUrl = `http://127.0.0.1:${this.context.port}/download/${directoryId}?p=${embedData.embedFilePath}`;
 		if (embedData.embedType === 'pdf') {
 			// this.embedPdf(fileUrl, embedData.embedArguments, element, context);
-			const embedUrl = `http://127.0.0.1:${this.context.port}/embed/${relativeTo === "home" ? "home" : "vault"}?p=${embedData.embedFilePath}`;
+			const embedUrl = `http://127.0.0.1:${this.context.port}/embed/${directoryId}?p=${embedData.embedFilePath}`;
 			this.embedPdfWithIframe(embedUrl, embedData.embedArguments, element, context);
 		} else if (embedData.embedType === 'image') {
 			this.embedImage(fileUrl, embedData.embedArguments, element, context);
@@ -541,13 +572,13 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		} else if (embedData.embedType === 'audio') {
 			this.embedAudio(fileUrl, element, context);
 		} else if (embedData.embedType === 'markdown') {
-			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${embedData.embedFilePath}`;
+			const fullPath = path.join(direcotryPath, embedData.embedFilePath);
 			this.embedMarkdown(fullPath, embedData.embedArguments, element, context);
 		} else if (embedData.embedType === 'folder') {
-			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${embedData.embedFilePath}`;
+			const fullPath = path.join(direcotryPath, embedData.embedFilePath);
 			this.embedFolder(fullPath, embedData.embedArguments, element, context);
 		} else {
-			const fullPath = `${relativeTo === "home" ? this.context.homeDirectory : this.context.vaultDirectory}/${filePath}`;
+			const fullPath = path.join(direcotryPath, embedData.embedFilePath);
 			this.embedOther(fullPath, element, context);
 		}
 	}
@@ -597,12 +628,24 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		if (!result.canceled && result.filePaths.length > 0) {
 			const filePaths = result.filePaths;
-			// console.log("Selected files:", filePaths);
+			console.log("Selected files:", filePaths);
 
 			filePaths.forEach((filePath: string) => {
 				const relativePath = getRelativePath(baseDir, filePath);
 				createEmbedFn(editor, relativePath);
 			});
 		}
+	}
+
+	private processEmbedRelativeTo(source: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const fileUrl = source.trim();
+		// the format of fileUrl is like this:
+		// home://SynologyDrive/test.pdf
+		// vault://../test.pdf
+		// Project123://docs/license.txt
+		// {custom-directory-id}://{relative-path}
+		// we need to extract the relative path from the fileUrl
+		const [directoryId, relativePath] = fileUrl.split('://', 2);
+		this.processCodeBlockEmbed(directoryId.toLowerCase(), relativePath, element, context);
 	}
 }
