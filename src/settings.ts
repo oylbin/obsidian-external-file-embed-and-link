@@ -173,6 +173,10 @@ export class DirectoryConfigManagerImpl implements DirectoryConfigManager {
 		if (id === 'home' || id === 'vault') {
 			throw new Error("Please enter a valid ID, home and vault are predefined");
 		}
+		if(id === 'file'){
+			// "file" is also reserved for file system path, maybe in the future we can use it to embed absolute file system path like "file://"
+			throw new Error("Please enter a valid ID, file is reserved for file system path");
+		}
 
 		if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(id)) {
 			throw new Error("Please enter a valid ID, only letters and numbers are allowed, and the first character must be a letter, " + id + " is not a valid ID");
