@@ -42,6 +42,16 @@ export const DEFAULT_SETTINGS: CrossComputerLinkPluginSettings = {
 	customDirectories: {},
 	commands: [
 		{
+			id: 'add-external-embed',
+			name: 'Add external embed',
+			enabled: true
+		},
+		{
+			id: 'add-external-inline-link',
+			name: 'Add external inline link',
+			enabled: true
+		},
+		{
 			id: 'add-external-embed-relative-to-home',
 			name: 'Add external embed relative to home',
 			enabled: true

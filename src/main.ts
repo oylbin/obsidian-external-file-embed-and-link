@@ -222,6 +222,23 @@ export default class CrossComputerLinkPlugin extends Plugin {
 									this.createInlineLinkRelativeToVault.bind(this)
 								);
 								break;
+							case 'add-external-embed':
+								// TODO 
+								// 
+								// 1. display a dialog to let user choose the directory
+								// 2. show file picker to let user choose the file
+								// 3. create embed code
+								// 4. insert the embed code into the current file
+								console.log("add-external-embed");
+								break;
+							case 'add-external-inline-link':
+								// TODO
+								// 1. display a dialog to let user choose the directory
+								// 2. show file picker to let user choose the file
+								// 3. create inline link
+								// 4. insert the inline link into the current file
+								console.log("add-external-inline-link");
+								break;
 						}
 					}
 				});
@@ -257,12 +274,19 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			})
 		);
 
+
+		// keep LinkRelativeToHome and LinkRelativeToVault for backward compatibility
+		// no plan to support LinkRelativeTo, use inline link instead
+		//  <a href="#" class="LinkRelativeTo" directoryId="home">SynologyDrive/test.pdf</a>
 		this.registerMarkdownCodeBlockProcessor("LinkRelativeToHome", (source, el, ctx) => {
 			this.processCodeBlockLink("home", source, el, ctx);
 		});
 		this.registerMarkdownCodeBlockProcessor("LinkRelativeToVault", (source, el, ctx) => {
 			this.processCodeBlockLink("vault", source, el, ctx);
 		});
+
+
+
 		this.registerMarkdownCodeBlockProcessor("EmbedRelativeToHome", (source, el, ctx) => {
 			this.processCodeBlockEmbed("home", source, el, ctx);
 		});
