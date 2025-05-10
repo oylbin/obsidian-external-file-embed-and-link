@@ -103,18 +103,18 @@ export interface VirtualDirectoryManager {
 	getAllDevices(): DeviceInfo[];
 	setDeviceName(uuid: string, name: string): Promise<void>;
 	removeDevice(uuid: string): Promise<void>;
-	
+
 	addDirectory(virtualDirectoryName: string): Promise<void>;
 	// TODO also update directory names in obsidian notes?
 	// or just warn user to do it manually?
 	renameDirectory(virtualDirectoryName: string, newName: string): Promise<void>;
 	deleteDirectory(virtualDirectoryName: string): Promise<void>;
-	
+
 	registerCurrentDevice(): void;
 	getLocalDirectory(virtualDirectoryName: string): string | null;
 	setLocalDirectory(virtualDirectoryName: string, directory: string): Promise<void>;
 	setDirectory(virtualDirectoryName: string, uuid: string, directory: string): Promise<void>;
-	getAllDirectories():VirtualDirectoriesMap;
+	getAllDirectories(): VirtualDirectoriesMap;
 }
 
 
@@ -125,12 +125,12 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 		this.registerCurrentDevice();
 	}
 
-	registerCurrentDevice(){
-		if(this.plugin.settings.devices[this.deviceUUID]){
+	registerCurrentDevice() {
+		if (this.plugin.settings.devices[this.deviceUUID]) {
 			return;
 		}
 		let deviceName = os.hostname();
-		if( deviceName.length === 0){
+		if (deviceName.length === 0) {
 			deviceName = "Unknown";
 		}
 		this.plugin.settings.devices[this.deviceUUID] = {
@@ -145,7 +145,7 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	}
 
 	private checkDeviceName(name: string) {
-		if(!/^[a-zA-Z0-9\s\-_.]+$/.test(name)){
+		if (!/^[a-zA-Z0-9\s\-_.]+$/.test(name)) {
 			throw new Error("Invalid device name, only letters, numbers, spaces, dash, dot, and underscore are allowed");
 		}
 	}
@@ -153,17 +153,17 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	private checkVirtualDirectoryName(name: string) {
 		const lowerName = name.toLowerCase();
 		// home, vault, file are reserved
-		if(lowerName === 'home' || lowerName === 'vault' || lowerName === 'file'){
+		if (lowerName === 'home' || lowerName === 'vault' || lowerName === 'file') {
 			throw new Error("Invalid virtual directory name, home, vault, and file are reserved");
 		}
-		if(!/^[a-zA-Z0-9]+$/.test(name)){
+		if (!/^[a-zA-Z0-9]+$/.test(name)) {
 			throw new Error("Invalid virtual directory name, only letters and numbers are allowed");
 		}
 	}
 
 	setDeviceName(uuid: string, name: string): Promise<void> {
 		// check if the device exists
-		if(!this.plugin.settings.devices[uuid]){
+		if (!this.plugin.settings.devices[uuid]) {
 			throw new Error("Device not found");
 		}
 		this.checkDeviceName(name);
@@ -181,7 +181,7 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	}
 
 	addDirectory(virtualDirectoryName: string): Promise<void> {
-		if(this.plugin.settings.virtualDirectories[virtualDirectoryName]){
+		if (this.plugin.settings.virtualDirectories[virtualDirectoryName]) {
 			throw new Error("Directory already exists");
 		}
 		this.checkVirtualDirectoryName(virtualDirectoryName);
@@ -190,7 +190,7 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	}
 
 	renameDirectory(virtualDirectoryName: string, newName: string): Promise<void> {
-		if(this.plugin.settings.virtualDirectories[newName]){
+		if (this.plugin.settings.virtualDirectories[newName]) {
 			throw new Error("Directory already exists");
 		}
 		this.checkVirtualDirectoryName(newName);
@@ -203,12 +203,12 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 		delete this.plugin.settings.virtualDirectories[virtualDirectoryName];
 		return this.plugin.saveSettings();
 	}
-	
+
 	getLocalDirectory(virtualDirectoryName: string): string | null {
-		if(!this.plugin.settings.virtualDirectories[virtualDirectoryName]){
+		if (!this.plugin.settings.virtualDirectories[virtualDirectoryName]) {
 			return null;
 		}
-		if(!this.plugin.settings.virtualDirectories[virtualDirectoryName][this.deviceUUID]){
+		if (!this.plugin.settings.virtualDirectories[virtualDirectoryName][this.deviceUUID]) {
 			return null;
 		}
 		return this.plugin.settings.virtualDirectories[virtualDirectoryName][this.deviceUUID].path;
@@ -217,14 +217,14 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	setLocalDirectory(virtualDirectoryName: string, directory: string): Promise<void> {
 
 		// check if the directory exists
-		if(!existsSync(directory)){
+		if (!existsSync(directory)) {
 			throw new Error("Directory does not exist");
 		}
 		return this.setDirectory(virtualDirectoryName, this.deviceUUID, directory);
 	}
 
 	setDirectory(virtualDirectoryName: string, uuid: string, directory: string): Promise<void> {
-		if(!this.plugin.settings.virtualDirectories[virtualDirectoryName]){
+		if (!this.plugin.settings.virtualDirectories[virtualDirectoryName]) {
 			this.plugin.settings.virtualDirectories[virtualDirectoryName] = {};
 		}
 		this.plugin.settings.virtualDirectories[virtualDirectoryName][uuid] = {
@@ -233,7 +233,7 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 		return this.plugin.saveSettings();
 	}
 
-	getAllDirectories():VirtualDirectoriesMap {
+	getAllDirectories(): VirtualDirectoriesMap {
 		return this.plugin.settings.virtualDirectories;
 	}
 
@@ -258,14 +258,14 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		confirmModal.contentEl.createEl('p', {
 			text: message
 		});
-		
+
 		const buttonContainer = confirmModal.contentEl.createDiv({ cls: 'modal-button-container' });
-		
+
 		const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
 		cancelButton.addEventListener('click', () => {
 			confirmModal.close();
 		});
-		
+
 		const confirmButton = buttonContainer.createEl('button', { text: 'Confirm', cls: 'mod-warning' });
 		confirmButton.addEventListener('click', async () => {
 			try {
@@ -275,12 +275,12 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 				new Notice(error.message);
 			}
 		});
-		
+
 		confirmModal.open();
 	}
 
-	private displayCommands(containerEl: HTMLElement){
-		
+	private displayCommands(containerEl: HTMLElement) {
+
 		// Add commands section
 		containerEl.createEl('h2', { text: 'Commands' });
 		containerEl.createEl('p', {
@@ -315,10 +315,10 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 			// Command name column
 			row.createEl('td', { text: command.name });
 		});
-		
+
 	}
 
-	private displayDragAndDrop(containerEl: HTMLElement){
+	private displayDragAndDrop(containerEl: HTMLElement) {
 		if (Platform.isMacOS || Platform.isWin) {
 
 			// Add drag and drop settings section
@@ -375,50 +375,50 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		// Display devices section
 		new Setting(containerEl)
 			.setName('Devices')
-			.setDesc('Configure device names. New devices will be added automatically when the plugin is first loaded.');
+			.setHeading()
+			.setDesc(createFragment(f => {
+				f.createEl('p', { text: 'Configure device names. New devices will be added automatically when the plugin is first loaded.' });
+				f.createEl('p', {}, p => {
+					p.appendText('Learn more about ');
+					p.createEl('a', {
+						text: 'device management',
+						href: 'https://github.com/your-repo/your-plugin'
+					});
+					p.appendText('.');
+				});
+			}));
 
-		// Create devices table
-		const devicesTable = containerEl.createEl('table', { cls: 'devices-table' });
-		const devicesThead = devicesTable.createEl('thead');
-		const devicesHeaderRow = devicesThead.createEl('tr');
-		['Device ID', 'OS', 'Device Name', ''].forEach(text => {
-			devicesHeaderRow.createEl('th', { text });
-		});
-
-		const devicesTbody = devicesTable.createEl('tbody');
 		this.virtualDirectoryManager.getAllDevices().forEach(device => {
-			const row = devicesTbody.createEl('tr');
-			// Device UUID column - only show first 8 characters
-			row.createEl('td', { text: device.uuid.substring(0, 8) });
-
-			// OS column
-			row.createEl('td', { text: device.os });
-
-			// Device Name column with edit functionality
-			const nameCell = row.createEl('td');
-			new Setting(nameCell)
+			let settingName = `Device ID: ${device.uuid.substring(0, 8)}`;
+			if (device.uuid === this.deviceUUID) {
+				settingName += ' (Current device)';
+			}
+			new Setting(containerEl)
+				.setName(settingName)
+				.setDesc(`OS: ${device.os}`)
 				.addText(text => text
 					.setValue(device.name)
 					.onChange(async (value) => {
+						const oldName = device.name;
 						try {
 							await this.virtualDirectoryManager.setDeviceName(device.uuid, value);
 						} catch (error) {
 							new Notice(error.message);
+							// revert the change
+							this.virtualDirectoryManager.setDeviceName(device.uuid, oldName);
+							// set the text back to the old name
+							text.setValue(oldName);
 						}
-					}));
-
-
-
-			// Action column - hide delete button for current device
-			const actionCell = row.createEl('td');
-			let hideDeleteButton = device.uuid === this.deviceUUID;
-			hideDeleteButton = false;
-			if (!hideDeleteButton) {
-				new Setting(actionCell)
-					.addExtraButton(button => button
-						.setIcon('trash')
-						.setTooltip('Delete device')
-						.onClick(() => {
+					}))
+				.addExtraButton(button => button
+					.setIcon('trash')
+					.setTooltip('Delete device')
+					.onClick(async () => {
+						if(device.uuid === this.deviceUUID){
+							// show a dialog to tell user can not delete current device
+							new Notice('Cannot delete current device.');
+							return;
+						}else{
 							this.showConfirmDialog(
 								'Confirm Device Deletion',
 								`If you delete this device (${device.name}), all the virtual directory settings of this device will be removed. Are you sure you want to continue?`,
@@ -427,48 +427,77 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 									this.display();
 								}
 							);
-						}));
-			}
-		});
-		
+						}						
+					}));
+		})
 
-		// Display virtual directories section
-		new Setting(containerEl)
-			.setName('Predefined virtual directories')
-			.setDesc('You can not change the path of these directories as they are resolved automatically.');
+		const showPredefinedDirectories = false;
 
-		// create a table for predefined virtual directories
-		const predefinedDirectoriesTable = containerEl.createEl('table', { cls: 'predefined-directories-table' });
-		const predefinedDirectoriesThead = predefinedDirectoriesTable.createEl('thead');
-		const predefinedDirectoriesHeaderRow = predefinedDirectoriesThead.createEl('tr');
-		['Directory Name', 'Path'].forEach(text => {
-			predefinedDirectoriesHeaderRow.createEl('th', { text });
-		});
+		if (showPredefinedDirectories) {
+			// Display virtual directories section
+			new Setting(containerEl)
+				.setName('Predefined virtual directories')
+				.setDesc('You can not change the path of these directories as they are resolved automatically.');
 
-		const predefinedDirectories = [
-			{
-				name: 'home',
-				path: process.env.HOME || process.env.USERPROFILE || ''
-			},
-			{
-				name: 'vault',
-				// @ts-ignore
-				path: this.app.vault.adapter.basePath
-			}
-		]
+			// create a table for predefined virtual directories
+			const predefinedDirectoriesTable = containerEl.createEl('table', { cls: 'predefined-directories-table' });
+			const predefinedDirectoriesThead = predefinedDirectoriesTable.createEl('thead');
+			const predefinedDirectoriesHeaderRow = predefinedDirectoriesThead.createEl('tr');
+			['Directory Name', 'Path'].forEach(text => {
+				predefinedDirectoriesHeaderRow.createEl('th', { text });
+			});
 
-		const predefinedDirectoriesTbody = predefinedDirectoriesTable.createEl('tbody');
-		predefinedDirectories.forEach((directory, index) => {
-			const row = predefinedDirectoriesTbody.createEl('tr');
-			row.createEl('td', { text: directory.name });
-			row.createEl('td', { text: directory.path });
-		});
+			const predefinedDirectories = [
+				{
+					name: 'home',
+					path: process.env.HOME || process.env.USERPROFILE || ''
+				},
+				{
+					name: 'vault',
+					// @ts-ignore
+					path: this.app.vault.adapter.basePath
+				}
+			]
+
+			const predefinedDirectoriesTbody = predefinedDirectoriesTable.createEl('tbody');
+			predefinedDirectories.forEach((directory, index) => {
+				const row = predefinedDirectoriesTbody.createEl('tr');
+				row.createEl('td', { text: directory.name });
+				row.createEl('td', { text: directory.path });
+			});
+		}
+
 		// containerEl.createEl('hr');
 		// containerEl.createEl('h2', { text: 'User-Defined Virtual Directories' });
 
-		new Setting(containerEl)
+		const userDefinedDirectoriesSection = new Setting(containerEl)
 			.setName('User-Defined Virtual Directories')
-			.setDesc('Configure virtual directories that can be used to locate files on different devices.');
+			.setHeading()
+			.setDesc(createFragment(f => {
+				f.createEl('p', { text: 'Configure virtual directories that can be used to locate files on different devices.' });
+				f.createEl('p', { text: 'For example:' });
+				const ul = f.createEl('ul');
+				ul.createEl('li', {}, li => {
+					li.appendText('Create a ');
+					li.createEl('code', { text: 'projects' });
+					li.appendText(' directory to link to your project files');
+				});
+				ul.createEl('li', {}, li => {
+					li.appendText('Create a ');
+					li.createEl('code', { text: 'documents' });
+					li.appendText(' directory to link to your documents');
+				});
+				f.createEl('p', {}, p => {
+					p.appendText('Learn more about ');
+					p.createEl('a', {
+						text: 'virtual directories',
+						href: 'https://github.com/your-repo/your-plugin#virtual-directories'
+					});
+					p.appendText('.');
+				});
+			}));
+		
+		
 
 		// Add new virtual directory button
 		const addDirectorySetting = new Setting(containerEl)
@@ -496,7 +525,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		Object.entries(directories).forEach(([dirName, devices]) => {
 			// Create section for each virtual directory
 			const dirSection = containerEl.createEl('div', { cls: 'virtual-directory-section' });
-			
+
 			// Directory name with edit functionality
 			const dirHeader = dirSection.createEl('div', { cls: 'directory-header' });
 			new Setting(dirHeader)
@@ -543,7 +572,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 				const row = dirTbody.createEl('tr');
 
 				//const deviceInfoStr = `${device.uuid.substring(0, 8)} - ${device.os} - ${device.name}`;
-				
+
 				// Device info column - only show first 8 characters of UUID
 				row.createEl('td', { text: device.uuid.substring(0, 8) });
 				row.createEl('td', { text: device.os });
@@ -601,6 +630,6 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		// this.displayCommands(containerEl);
 		// this.displayDragAndDrop(containerEl);
 		this.displayDirectories(containerEl);
-		
+
 	}
 }
