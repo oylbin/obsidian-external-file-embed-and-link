@@ -205,6 +205,14 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	}
 
 	getLocalDirectory(virtualDirectoryName: string): string | null {
+
+		if(virtualDirectoryName === 'home'){
+			return process.env.HOME || process.env.USERPROFILE || '';
+		}
+		if(virtualDirectoryName === 'vault'){
+			// @ts-ignore
+			return this.plugin.app.vault.adapter.basePath;
+		}
 		if (!this.plugin.settings.virtualDirectories[virtualDirectoryName]) {
 			return null;
 		}
@@ -431,61 +439,28 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 					}));
 		})
 
-		const showPredefinedDirectories = false;
+		
+		const homeDirectory = this.virtualDirectoryManager.getLocalDirectory('home');
+		const vaultDirectory = this.virtualDirectoryManager.getLocalDirectory('vault');
 
-		if (showPredefinedDirectories) {
-			// Display virtual directories section
-			new Setting(containerEl)
-				.setName('Predefined virtual directories')
-				.setDesc('You can not change the path of these directories as they are resolved automatically.');
-
-			// create a table for predefined virtual directories
-			const predefinedDirectoriesTable = containerEl.createEl('table', { cls: 'predefined-directories-table' });
-			const predefinedDirectoriesThead = predefinedDirectoriesTable.createEl('thead');
-			const predefinedDirectoriesHeaderRow = predefinedDirectoriesThead.createEl('tr');
-			['Directory Name', 'Path'].forEach(text => {
-				predefinedDirectoriesHeaderRow.createEl('th', { text });
-			});
-
-			const predefinedDirectories = [
-				{
-					name: 'home',
-					path: process.env.HOME || process.env.USERPROFILE || ''
-				},
-				{
-					name: 'vault',
-					// @ts-ignore
-					path: this.app.vault.adapter.basePath
-				}
-			]
-
-			const predefinedDirectoriesTbody = predefinedDirectoriesTable.createEl('tbody');
-			predefinedDirectories.forEach((directory, index) => {
-				const row = predefinedDirectoriesTbody.createEl('tr');
-				row.createEl('td', { text: directory.name });
-				row.createEl('td', { text: directory.path });
-			});
-		}
-
-		// containerEl.createEl('hr');
-		// containerEl.createEl('h2', { text: 'User-Defined Virtual Directories' });
-
-		const userDefinedDirectoriesSection = new Setting(containerEl)
-			.setName('User-Defined Virtual Directories')
+		new Setting(containerEl)
+			.setName('Virtual Directories')
 			.setHeading()
 			.setDesc(createFragment(f => {
 				f.createEl('p', { text: 'Configure virtual directories that can be used to locate files on different devices.' });
-				f.createEl('p', { text: 'For example:' });
+				f.createEl('p', { text: 'Predefined virtual directories:' });
 				const ul = f.createEl('ul');
 				ul.createEl('li', {}, li => {
-					li.appendText('Create a ');
-					li.createEl('code', { text: 'projects' });
-					li.appendText(' directory to link to your project files');
+					li.appendText('Directory name ');
+					li.createEl('code', { text: 'home' });
+					li.appendText(' is linked to your home directory: ');
+					li.createEl('code', { text: homeDirectory || 'Not set' });
 				});
 				ul.createEl('li', {}, li => {
-					li.appendText('Create a ');
-					li.createEl('code', { text: 'documents' });
-					li.appendText(' directory to link to your documents');
+					li.appendText('Directory name ');
+					li.createEl('code', { text: 'vault' });
+					li.appendText(' is linked to your vault directory: ');
+					li.createEl('code', { text: vaultDirectory || 'Not set' });
 				});
 				f.createEl('p', {}, p => {
 					p.appendText('Learn more about ');
@@ -502,7 +477,13 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		// Add new virtual directory button
 		const addDirectorySetting = new Setting(containerEl)
 			.setName('Add New Virtual Directory')
-			.setDesc('Add a new virtual directory configuration');
+			.setDesc(createFragment(f => {
+				f.appendText('Add a new virtual directory configuration, ');
+				f.createEl('code', { text: 'home' });
+				f.appendText(' and ');
+				f.createEl('code', { text: 'vault' });
+				f.appendText(' are predefined');
+			}));
 
 		const nameInput = new TextComponent(addDirectorySetting.controlEl)
 			.setPlaceholder('Directory name')
