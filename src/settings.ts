@@ -373,10 +373,9 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 
 	private displayDirectories(containerEl: HTMLElement) {
 		// Display devices section
-		containerEl.createEl('h2', { text: 'Devices' });
-		containerEl.createEl('p', {
-			text: 'Configure device names. New devices will be added automatically when the plugin is first loaded.'
-		});
+		new Setting(containerEl)
+			.setName('Devices')
+			.setDesc('Configure device names. New devices will be added automatically when the plugin is first loaded.');
 
 		// Create devices table
 		const devicesTable = containerEl.createEl('table', { cls: 'devices-table' });
@@ -431,12 +430,45 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 						}));
 			}
 		});
+		
 
 		// Display virtual directories section
-		containerEl.createEl('h2', { text: 'Virtual Directories' });
-		containerEl.createEl('p', {
-			text: 'Configure virtual directories that can be used to locate files on different devices.'
+		new Setting(containerEl)
+			.setName('Predefined virtual directories')
+			.setDesc('You can not change the path of these directories as they are resolved automatically.');
+
+		// create a table for predefined virtual directories
+		const predefinedDirectoriesTable = containerEl.createEl('table', { cls: 'predefined-directories-table' });
+		const predefinedDirectoriesThead = predefinedDirectoriesTable.createEl('thead');
+		const predefinedDirectoriesHeaderRow = predefinedDirectoriesThead.createEl('tr');
+		['Directory Name', 'Path'].forEach(text => {
+			predefinedDirectoriesHeaderRow.createEl('th', { text });
 		});
+
+		const predefinedDirectories = [
+			{
+				name: 'home',
+				path: process.env.HOME || process.env.USERPROFILE || ''
+			},
+			{
+				name: 'vault',
+				// @ts-ignore
+				path: this.app.vault.adapter.basePath
+			}
+		]
+
+		const predefinedDirectoriesTbody = predefinedDirectoriesTable.createEl('tbody');
+		predefinedDirectories.forEach((directory, index) => {
+			const row = predefinedDirectoriesTbody.createEl('tr');
+			row.createEl('td', { text: directory.name });
+			row.createEl('td', { text: directory.path });
+		});
+		// containerEl.createEl('hr');
+		// containerEl.createEl('h2', { text: 'User-Defined Virtual Directories' });
+
+		new Setting(containerEl)
+			.setName('User-Defined Virtual Directories')
+			.setDesc('Configure virtual directories that can be used to locate files on different devices.');
 
 		// Add new virtual directory button
 		const addDirectorySetting = new Setting(containerEl)
@@ -444,7 +476,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 			.setDesc('Add a new virtual directory configuration');
 
 		const nameInput = new TextComponent(addDirectorySetting.controlEl)
-			.setPlaceholder('Directory Name')
+			.setPlaceholder('Directory name')
 			.setValue('');
 
 		new ButtonComponent(addDirectorySetting.controlEl)
@@ -468,7 +500,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 			// Directory name with edit functionality
 			const dirHeader = dirSection.createEl('div', { cls: 'directory-header' });
 			new Setting(dirHeader)
-				.setName("Virtual directory name")
+				.setName("Directory name")
 				.addText(text => text
 					.setValue(dirName)
 					.onChange(async (value) => {

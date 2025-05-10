@@ -92,7 +92,8 @@ If your plugin does not need CSS, delete this file.
 }
 
 .devices-table td {
-	min-width: 100px;
+	padding-left: 10px;
+	padding-right: 10px;
 	text-align: center;
 }
 
@@ -102,6 +103,16 @@ If your plugin does not need CSS, delete this file.
 }
 
 .directory-paths-table th {
+	font-weight: normal;
+	text-align: center;
+}
+
+.directory-paths-table td {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+.predefined-directories-table th {
 	font-weight: normal;
 	text-align: center;
 }
