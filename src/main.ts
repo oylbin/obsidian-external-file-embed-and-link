@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Platform } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Platform, Modal } from 'obsidian';
 import * as http from 'http';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -8,6 +8,70 @@ import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSet
 import { VirtualDirectoryManagerImpl } from './VirtualDirectoryManager';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedFolderArguments, parseEmbedPdfArguments } from './embedProcessor';
 import { getLocalMachineId } from './local-settings';
+// @ts-ignore
+import { remote } from 'electron';
+
+class DirectorySelectionModal extends Modal {
+	private selectedDirectoryId: string | null = null;
+	private resolvePromise: ((value: string | null) => void) | null = null;
+
+	constructor(
+		app: any,
+		private directories: Record<string, string>
+	) {
+		super(app);
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+
+		// Create directory selection dialog
+		const directorySelect = document.createElement('select');
+		directorySelect.classList.add('directory-select');
+		
+		// Add options for each directory
+		Object.entries(this.directories).forEach(([id, path]) => {
+			const option = document.createElement('option');
+			option.value = id;
+			option.textContent = `${id} (${path})`;
+			directorySelect.appendChild(option);
+		});
+
+		// Create dialog content
+		contentEl.appendChild(document.createTextNode('Select directory: '));
+		contentEl.appendChild(directorySelect);
+
+		// Add buttons
+		const buttonContainer = contentEl.createDiv('modal-button-container');
+		const selectButton = buttonContainer.createEl('button', { text: 'Select' });
+		const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
+
+		selectButton.addEventListener('click', () => {
+			this.selectedDirectoryId = directorySelect.value;
+			this.close();
+		});
+
+		cancelButton.addEventListener('click', () => {
+			this.selectedDirectoryId = null;
+			this.close();
+		});
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+		if (this.resolvePromise) {
+			this.resolvePromise(this.selectedDirectoryId);
+		}
+	}
+
+	async waitForSelection(): Promise<string | null> {
+		return new Promise((resolve) => {
+			this.resolvePromise = resolve;
+		});
+	}
+}
 
 export default class CrossComputerLinkPlugin extends Plugin {
 	settings: CrossComputerLinkPluginSettings;
@@ -224,21 +288,10 @@ export default class CrossComputerLinkPlugin extends Plugin {
 								);
 								break;
 							case 'add-external-embed':
-								// TODO 
-								// 
-								// 1. display a dialog to let user choose the directory
-								// 2. show file picker to let user choose the file
-								// 3. create embed code
-								// 4. insert the embed code into the current file
-								console.log("add-external-embed");
+								this.handleAddExternalEmbed(editor);
 								break;
-							case 'add-external-inline-link':
-								// TODO
-								// 1. display a dialog to let user choose the directory
-								// 2. show file picker to let user choose the file
-								// 3. create inline link
-								// 4. insert the inline link into the current file
-								console.log("add-external-inline-link");
+							case 'add-external-inline-link':							
+								this.handleAddExternalInlineLink(editor);
 								break;
 						}
 					}
@@ -304,6 +357,52 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		});
 
 
+	}
+
+	private async selectFileAndCreateCode(editor: Editor, 
+        createCodeFn: (directoryId: string, filePath: string) => string) {
+		const localDirectories = this.context.directoryConfigManager.getAllLocalDirectories();
+		if (Object.keys(localDirectories).length === 0) {
+			new Notice("No local directories configured. Please configure directories in settings first.");
+			return;
+		}
+
+		// Show directory selection modal
+		const modal = new DirectorySelectionModal(this.app, localDirectories);
+		modal.open();
+		const selectedDirectoryId = await modal.waitForSelection();
+
+		if (selectedDirectoryId) {
+			const selectedDirectoryPath = localDirectories[selectedDirectoryId];
+
+			// Show file picker for selected directory
+			const result = await remote.dialog.showOpenDialog({
+				defaultPath: selectedDirectoryPath,
+				properties: ['openFile', 'multiSelections'],
+				filters: [
+					{ name: 'All Files', extensions: ['*'] }
+				]
+			});
+
+			if (!result.canceled && result.filePaths.length > 0) {
+				result.filePaths.forEach((filePath: string) => {
+					const relativePath = getRelativePath(selectedDirectoryPath, filePath);
+					//const embedCode = `\n\`\`\`EmbedRelativeTo\n${selectedDirectoryId}://${relativePath}\n\`\`\`\n`;
+					const embedCode = createCodeFn(selectedDirectoryId, relativePath);
+					this.insertText(editor, embedCode);
+				});
+			}
+		}
+	}
+	private async handleAddExternalEmbed(editor: Editor) {
+		await this.selectFileAndCreateCode(editor, (directoryId: string, filePath: string) => {
+			return `\n\`\`\`EmbedRelativeTo\n${directoryId}://${filePath}\n\`\`\`\n`;
+		});
+	}
+	private async handleAddExternalInlineLink(editor: Editor) {
+		await this.selectFileAndCreateCode(editor, (directoryId: string, filePath: string) => {
+			return ` <a href="#${directoryId}://${filePath}" class="LinkRelativeTo">${path.basename(filePath)}</a> `;
+		});
 	}
 
 	private embedPdfWithIframe(embedUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
@@ -487,6 +586,42 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 			// Modifying href here is not effective, clicking will cause Not allowed to load local resource error
 			// Modify its onclick event instead
+			el.addEventListener("click", () => {
+				openFileWithDefaultProgram(fullPath, (error) => {
+					if (error) {
+						new Notice("Failed to open file: " + error.message);
+					}
+				});
+			});
+		});
+		element.querySelectorAll('.LinkRelativeTo').forEach((el) => {
+			console.log("LinkRelativeTo", el);
+			let url = el.getAttribute('href');
+			if (!url) {
+				new Notice("Failed to open file: url is not set");
+				return;
+			}
+			// remove the first #
+			url = url.substring(1);
+			console.log("url", url);
+			const directoryId = url.split(':')[0];
+			if (!directoryId) {
+				new Notice("Failed to open file: directoryId is not set");
+				return;
+			}
+			const relativePath = url.split(':')[1];
+			if (!relativePath) {
+				new Notice("Failed to open file: relativePath is not set");
+				return;
+			}
+			const direcotryPath = this.context.directoryConfigManager.getLocalDirectory(directoryId);
+			if (!direcotryPath) {
+				new Notice("Failed to open file: directory not found");
+				return;
+			}
+			const fullPath = path.join(direcotryPath, relativePath);
+			console.log("fullPath", fullPath);
+			el.textContent = path.basename(fullPath);
 			el.addEventListener("click", () => {
 				openFileWithDefaultProgram(fullPath, (error) => {
 					if (error) {

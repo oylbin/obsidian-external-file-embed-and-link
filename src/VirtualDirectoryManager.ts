@@ -20,6 +20,8 @@ export interface VirtualDirectoryManager {
 	setLocalDirectory(virtualDirectoryName: string, directory: string): Promise<void>;
 	setDirectory(virtualDirectoryName: string, uuid: string, directory: string): Promise<void>;
 	getAllDirectories(): VirtualDirectoriesMap;
+
+	getAllLocalDirectories(): Record<string, string>;
 }
 
 
@@ -148,6 +150,19 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 
 	getAllDirectories(): VirtualDirectoriesMap {
 		return this.plugin.settings.virtualDirectories;
+	}
+
+	getAllLocalDirectories(): Record<string, string> {
+		const result: Record<string, string> = {};
+		result['home'] = this.getLocalDirectory('home') || '';
+		result['vault'] = this.getLocalDirectory('vault') || '';
+		Object.keys(this.plugin.settings.virtualDirectories).forEach(virtualDirectoryName => {
+			const localDirectory = this.getLocalDirectory(virtualDirectoryName);
+			if (localDirectory) {
+				result[virtualDirectoryName] = localDirectory;
+			}
+		});
+		return result;
 	}
 
 }
