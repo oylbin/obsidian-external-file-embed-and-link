@@ -91,6 +91,11 @@ If your plugin does not need CSS, delete this file.
 	text-align: center;
 }
 
+.devices-table td {
+	min-width: 100px;
+	text-align: center;
+}
+
 .virtual-directory-section {
 	border: 1px solid var(--background-modifier-border);
 	padding: 10px;

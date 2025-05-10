@@ -1,5 +1,5 @@
 import CrossComputerLinkPlugin from 'main';
-import { App, Platform, PluginSettingTab, Setting, TextComponent, ButtonComponent, Notice } from 'obsidian';
+import { App, Platform, PluginSettingTab, Setting, TextComponent, ButtonComponent, Notice, Modal } from 'obsidian';
 import { existsSync } from 'fs';
 import * as os from 'os';
 export enum DragAction {
@@ -110,6 +110,7 @@ export interface VirtualDirectoryManager {
 	renameDirectory(virtualDirectoryName: string, newName: string): Promise<void>;
 	deleteDirectory(virtualDirectoryName: string): Promise<void>;
 	
+	registerCurrentDevice(): void;
 	getLocalDirectory(virtualDirectoryName: string): string | null;
 	setLocalDirectory(virtualDirectoryName: string, directory: string): Promise<void>;
 	setDirectory(virtualDirectoryName: string, uuid: string, directory: string): Promise<void>;
@@ -121,14 +122,13 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	private deviceUUID: string;
 	constructor(private plugin: CrossComputerLinkPlugin, deviceUUID: string) {
 		this.deviceUUID = deviceUUID;
-		this.registerDevice();
+		this.registerCurrentDevice();
 	}
 
-	private registerDevice(){
-		// if(this.plugin.settings.devices[this.deviceUUID]){
-
-		// 	return;
-		// }
+	registerCurrentDevice(){
+		if(this.plugin.settings.devices[this.deviceUUID]){
+			return;
+		}
 		let deviceName = os.hostname();
 		if( deviceName.length === 0){
 			deviceName = "Unknown";
@@ -250,6 +250,33 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 		this.virtualDirectoryManager = virtualDirectoryManager;
 		this.deviceUUID = deviceUUID;
+	}
+
+	private showConfirmDialog(title: string, message: string, onConfirm: () => Promise<void>) {
+		const confirmModal = new Modal(this.app);
+		confirmModal.titleEl.setText(title);
+		confirmModal.contentEl.createEl('p', {
+			text: message
+		});
+		
+		const buttonContainer = confirmModal.contentEl.createDiv({ cls: 'modal-button-container' });
+		
+		const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
+		cancelButton.addEventListener('click', () => {
+			confirmModal.close();
+		});
+		
+		const confirmButton = buttonContainer.createEl('button', { text: 'Confirm', cls: 'mod-warning' });
+		confirmButton.addEventListener('click', async () => {
+			try {
+				await onConfirm();
+				confirmModal.close();
+			} catch (error) {
+				new Notice(error.message);
+			}
+		});
+		
+		confirmModal.open();
 	}
 
 	private displayCommands(containerEl: HTMLElement){
@@ -385,18 +412,22 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 
 			// Action column - hide delete button for current device
 			const actionCell = row.createEl('td');
-			if (device.uuid !== this.deviceUUID) {
+			let hideDeleteButton = device.uuid === this.deviceUUID;
+			hideDeleteButton = false;
+			if (!hideDeleteButton) {
 				new Setting(actionCell)
 					.addExtraButton(button => button
 						.setIcon('trash')
 						.setTooltip('Delete device')
-						.onClick(async () => {
-							try {
-								await this.virtualDirectoryManager.removeDevice(device.uuid);
-								this.display();
-							} catch (error) {
-								new Notice(error.message);
-							}
+						.onClick(() => {
+							this.showConfirmDialog(
+								'Confirm Device Deletion',
+								`If you delete this device (${device.name}), all the virtual directory settings of this device will be removed. Are you sure you want to continue?`,
+								async () => {
+									await this.virtualDirectoryManager.removeDevice(device.uuid);
+									this.display();
+								}
+							);
 						}));
 			}
 		});
@@ -454,12 +485,17 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 					.setIcon('trash')
 					.setTooltip('Delete directory')
 					.onClick(async () => {
-						try {
-							await this.virtualDirectoryManager.deleteDirectory(dirName);
-							this.display();
-						} catch (error) {
-							new Notice(error.message);
-						}
+						this.showConfirmDialog(
+							'Confirm Directory Deletion',
+							`If you delete this virtual directory (${dirName}), all links using this directory in your notes will be broken. Are you sure you want to continue?`,
+							async () => {
+								try {
+									await this.virtualDirectoryManager.deleteDirectory(dirName);
+									this.display();
+								} catch (error) {
+									new Notice(error.message);
+								}
+							});
 					}));
 
 			// Create table for device paths
@@ -526,7 +562,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		console.log("display");
+		this.virtualDirectoryManager.registerCurrentDevice();
 		const { containerEl } = this;
 		containerEl.empty();
 

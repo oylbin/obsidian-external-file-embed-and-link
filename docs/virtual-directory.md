@@ -88,5 +88,9 @@ User can set where the virtual directory is located on different devices in plug
 - virtual directory name should be editable.
 
 
+- show warning before delete device
+- show warning before delete virtual directory
+
+
 
 
