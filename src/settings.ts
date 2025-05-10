@@ -16,6 +16,7 @@ export enum DragAction {
 export interface DeviceInfo {
 	uuid: string;
 	name: string;
+	os: string;
 }
 
 export interface DevicesMap {
@@ -124,16 +125,18 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	}
 
 	private registerDevice(){
-		if(this.plugin.settings.devices[this.deviceUUID]){
-			return;
-		}
+		// if(this.plugin.settings.devices[this.deviceUUID]){
+
+		// 	return;
+		// }
 		let deviceName = os.hostname();
 		if( deviceName.length === 0){
 			deviceName = "Unknown";
 		}
 		this.plugin.settings.devices[this.deviceUUID] = {
 			uuid: this.deviceUUID,
-			name: deviceName
+			name: deviceName,
+			os: os.platform()
 		};
 	}
 
@@ -341,8 +344,185 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		}
 	}
 
-	private displayDirectories(containerEl: HTMLElement){
+	private displayDirectories(containerEl: HTMLElement) {
+		// Display devices section
+		containerEl.createEl('h2', { text: 'Devices' });
+		containerEl.createEl('p', {
+			text: 'Configure device names. New devices will be added automatically when the plugin is first loaded.'
+		});
 
+		// Create devices table
+		const devicesTable = containerEl.createEl('table', { cls: 'devices-table' });
+		const devicesThead = devicesTable.createEl('thead');
+		const devicesHeaderRow = devicesThead.createEl('tr');
+		['Device ID', 'OS', 'Device Name', ''].forEach(text => {
+			devicesHeaderRow.createEl('th', { text });
+		});
+
+		const devicesTbody = devicesTable.createEl('tbody');
+		this.virtualDirectoryManager.getAllDevices().forEach(device => {
+			const row = devicesTbody.createEl('tr');
+			// Device UUID column - only show first 8 characters
+			row.createEl('td', { text: device.uuid.substring(0, 8) });
+
+			// OS column
+			row.createEl('td', { text: device.os });
+
+			// Device Name column with edit functionality
+			const nameCell = row.createEl('td');
+			new Setting(nameCell)
+				.addText(text => text
+					.setValue(device.name)
+					.onChange(async (value) => {
+						try {
+							await this.virtualDirectoryManager.setDeviceName(device.uuid, value);
+						} catch (error) {
+							new Notice(error.message);
+						}
+					}));
+
+
+
+			// Action column - hide delete button for current device
+			const actionCell = row.createEl('td');
+			if (device.uuid !== this.deviceUUID) {
+				new Setting(actionCell)
+					.addExtraButton(button => button
+						.setIcon('trash')
+						.setTooltip('Delete device')
+						.onClick(async () => {
+							try {
+								await this.virtualDirectoryManager.removeDevice(device.uuid);
+								this.display();
+							} catch (error) {
+								new Notice(error.message);
+							}
+						}));
+			}
+		});
+
+		// Display virtual directories section
+		containerEl.createEl('h2', { text: 'Virtual Directories' });
+		containerEl.createEl('p', {
+			text: 'Configure virtual directories that can be used to locate files on different devices.'
+		});
+
+		// Add new virtual directory button
+		const addDirectorySetting = new Setting(containerEl)
+			.setName('Add New Virtual Directory')
+			.setDesc('Add a new virtual directory configuration');
+
+		const nameInput = new TextComponent(addDirectorySetting.controlEl)
+			.setPlaceholder('Directory Name')
+			.setValue('');
+
+		new ButtonComponent(addDirectorySetting.controlEl)
+			.setButtonText('Add')
+			.onClick(async () => {
+				try {
+					const name = nameInput.getValue().trim();
+					await this.virtualDirectoryManager.addDirectory(name);
+					this.display();
+				} catch (error) {
+					new Notice(error.message);
+				}
+			});
+
+		// Display existing virtual directories
+		const directories = this.virtualDirectoryManager.getAllDirectories();
+		Object.entries(directories).forEach(([dirName, devices]) => {
+			// Create section for each virtual directory
+			const dirSection = containerEl.createEl('div', { cls: 'virtual-directory-section' });
+			
+			// Directory name with edit functionality
+			const dirHeader = dirSection.createEl('div', { cls: 'directory-header' });
+			new Setting(dirHeader)
+				.setName("Virtual directory name")
+				.addText(text => text
+					.setValue(dirName)
+					.onChange(async (value) => {
+						if (value && value !== dirName) {
+							try {
+								await this.virtualDirectoryManager.renameDirectory(dirName, value);
+								this.display();
+							} catch (error) {
+								new Notice(error.message);
+							}
+						}
+					}))
+				.addExtraButton(button => button
+					.setIcon('trash')
+					.setTooltip('Delete directory')
+					.onClick(async () => {
+						try {
+							await this.virtualDirectoryManager.deleteDirectory(dirName);
+							this.display();
+						} catch (error) {
+							new Notice(error.message);
+						}
+					}));
+
+			// Create table for device paths
+			const dirTable = dirSection.createEl('table', { cls: 'directory-paths-table' });
+			const dirThead = dirTable.createEl('thead');
+			const dirHeaderRow = dirThead.createEl('tr');
+			['Device ID', 'OS', 'Device Name', 'Path', ''].forEach(text => {
+				dirHeaderRow.createEl('th', { text });
+			});
+
+			const dirTbody = dirTable.createEl('tbody');
+			this.virtualDirectoryManager.getAllDevices().forEach(device => {
+				const row = dirTbody.createEl('tr');
+
+				//const deviceInfoStr = `${device.uuid.substring(0, 8)} - ${device.os} - ${device.name}`;
+				
+				// Device info column - only show first 8 characters of UUID
+				row.createEl('td', { text: device.uuid.substring(0, 8) });
+				row.createEl('td', { text: device.os });
+				row.createEl('td', { text: device.name });
+
+				// Path column with edit functionality
+				const pathCell = row.createEl('td');
+				new Setting(pathCell)
+					.addText(text => text
+						.setValue(devices[device.uuid]?.path || '')
+						.onChange(async (value) => {
+							try {
+								await this.virtualDirectoryManager.setDirectory(dirName, device.uuid, value);
+							} catch (error) {
+								new Notice(error.message);
+							}
+						}));
+
+				// Action column
+				const actionCell = row.createEl('td');
+				// if this is the current device, show a button to open a file browser to let user select a directory
+				if (device.uuid === this.deviceUUID) {
+					new Setting(actionCell)
+						.addExtraButton(button => button
+							.setIcon('folder')
+							.setTooltip('Open file browser')
+							.onClick(async () => {
+								// @ts-ignore
+								// eslint-disable-next-line @typescript-eslint/no-var-requires
+								const { remote } = require('electron');
+								const dialog = remote.dialog;
+								const result = await dialog.showOpenDialog({
+									properties: ['openDirectory'],
+								});
+								if (!result.canceled && result.filePaths.length > 0) {
+									const path = result.filePaths[0];
+									try {
+										await this.virtualDirectoryManager.setLocalDirectory(dirName, path);
+										this.display();
+									} catch (error) {
+										new Notice(error.message);
+									}
+								}
+							}));
+				}
+			});
+		});
 	}
 
 	display(): void {
@@ -350,112 +530,9 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		this.displayCommands(containerEl);
-		this.displayDragAndDrop(containerEl);
+		// this.displayCommands(containerEl);
+		// this.displayDragAndDrop(containerEl);
 		this.displayDirectories(containerEl);
-
-
-		// // Add directories section
-		// containerEl.createEl('h2', { text: 'Directories' });
-		// containerEl.createEl('p', {
-		// 	text: 'Configure directory IDs that can be used in embeds and links. Each ID maps to a directory on your computer.'
-		// });
-
-		// // Create table
-		// const table = containerEl.createEl('table', { cls: 'directory-table' });
-
-		// // Create table header
-		// const thead = table.createEl('thead');
-		// const headerRow = thead.createEl('tr');
-		// ['Type', 'ID', 'Path', 'Sync', 'Action'].forEach(text => {
-		// 	headerRow.createEl('th', { text });
-		// });
-
-		// // Create table body
-		// const tbody = table.createEl('tbody');
-
-		// // Add predefined directories
-		// const addDirectoryRow = (type: string, id: string, path: string, sync = false, showDelete = false) => {
-		// 	const row = tbody.createEl('tr');
-
-		// 	// Type column
-		// 	row.createEl('td', { text: type });
-
-		// 	// ID column
-		// 	row.createEl('td', { text: id });
-
-		// 	// Path column
-		// 	row.createEl('td', { text: path });
-
-		// 	// Sync column
-		// 	const syncCell = row.createEl('td');
-		// 	// if (type === 'Custom') {
-		// 	//     new Setting(syncCell)
-		// 	//         .addToggle(toggle => toggle
-		// 	//             .setValue(sync)
-		// 	//             .onChange(async (value) => {
-		// 	//                 const config = this.plugin.settings.customDirectories.find(dir => dir.id === id);
-		// 	//                 if (config) {
-		// 	//                     config.sync = value;
-		// 	//                     await this.plugin.saveSettings();
-		// 	//                 }
-		// 	//             }));
-		// 	// }
-		// 	syncCell.createEl('span', { text: (id === 'home' || id === 'vault') ? '' : (sync ? 'Yes' : 'No') });
-		// 	// Action column
-		// 	const actionCell = row.createEl('td');
-		// 	if (showDelete) {
-		// 		new Setting(actionCell)
-		// 			.addExtraButton(button => button
-		// 				.setIcon('trash')
-		// 				.setTooltip('Delete')
-		// 				.onClick(async () => {
-		// 					await this.directoryConfigManager.deleteDirectoryById(id);
-		// 					this.display();
-		// 				}));
-		// 	}
-		// };
-
-		// this.directoryConfigManager.getAllDirectories().forEach((config) => {
-		// 	addDirectoryRow(config.type, config.id, config.directory, config.sync, config.showDelete);
-		// });
-
-		// // Add custom directories
-		// // Add new custom directory form
-		// const addNewDirectorySetting = new Setting(containerEl)
-		// 	.setName('Add New Directory')
-		// 	.setDesc('Add a new custom directory configuration');
-
-		// const idInput = new TextComponent(addNewDirectorySetting.controlEl)
-		// 	.setPlaceholder('Directory ID')
-		// 	.setValue('');
-
-		// const directoryInput = new TextComponent(addNewDirectorySetting.controlEl)
-		// 	.setPlaceholder('Directory Path')
-		// 	.setValue('');
-
-		// let syncValue = false;
-		// new Setting(addNewDirectorySetting.controlEl)
-		// 	.setName('Sync across computers')
-		// 	.addToggle(toggle => toggle
-		// 		.setValue(syncValue)
-		// 		.onChange(async (value) => {
-		// 			syncValue = value;
-		// 		}));
-
-		// new ButtonComponent(addNewDirectorySetting.controlEl)
-		// 	.setButtonText('Add')
-		// 	.onClick(async () => {
-		// 		try {
-		// 			const id = idInput.getValue().trim();
-		// 			const directory = directoryInput.getValue().trim();
-		// 			await this.directoryConfigManager.addDirectory(id, directory, syncValue);
-		// 			this.display(); // Refresh the settings tab
-		// 		} catch (error) {
-		// 			new Notice(error.message);
-		// 		}
-		// 	});
-
 		
 	}
 }

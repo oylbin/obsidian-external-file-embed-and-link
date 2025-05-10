@@ -83,7 +83,9 @@ User can set where the virtual directory is located on different devices in plug
 			3. user can edit the path.
 	3. user can add a new virtual directory.
 
-
+- do not allow to delete current device.
+- only show first 8 characters of the device UUID in the setting page.
+- virtual directory name should be editable.
 
 
 

@@ -634,6 +634,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		createEmbedFn: (editor: Editor, relativePath: string) => void
 	) {
 		// @ts-ignore
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const { remote } = require('electron');
 		// const ImageExtensionsWithoutDot = ImageExtensions.map(ext => ext.substring(1));
 		// const VideoExtensionsWithoutDot = VideoExtensions.map(ext => ext.substring(1));

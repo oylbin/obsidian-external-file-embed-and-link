@@ -50,48 +50,6 @@ If your plugin does not need CSS, delete this file.
 	margin-top: 8px;
 }
 
-.predefined-directory {
-    background-color: var(--background-secondary);
-    border-radius: 4px;
-    padding: 8px;
-    margin-bottom: 8px;
-}
-
-.predefined-directory .setting-item-info {
-    white-space: pre-line;
-}
-
-.directory-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
-}
-
-.directory-table th,
-.directory-table td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.directory-table th {
-    font-weight: bold;
-    background-color: var(--background-secondary);
-}
-
-.directory-table tr:hover {
-    background-color: var(--background-secondary);
-}
-
-.directory-table td .setting-item {
-    padding: 0;
-    border: none;
-}
-
-.directory-table td .setting-item-control {
-    justify-content: flex-start;
-}
-
 .commands-table {
     width: 100%;
     border-collapse: collapse;
@@ -126,4 +84,19 @@ If your plugin does not need CSS, delete this file.
 .external-embed-error {
 	color: var(--text-error);
 	margin-top: 8px;
+}
+
+.devices-table th {
+	font-weight: normal;
+	text-align: center;
+}
+
+.virtual-directory-section {
+	border: 1px solid var(--background-modifier-border);
+	padding: 10px;
+}
+
+.directory-paths-table th {
+	font-weight: normal;
+	text-align: center;
 }
