@@ -561,7 +561,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 	private processCodeBlockEmbed(directoryId: string, relativePath: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 
-		const direcotryPath = this.context.directoryConfigManager.getDirectoryById(directoryId);
+		const direcotryPath = this.context.directoryConfigManager.getLocalDirectory(directoryId);
 		if (!direcotryPath) {
 			const errorMessage = [
 				`Can not embed file from "${directoryId}://${relativePath}"`,

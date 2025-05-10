@@ -388,13 +388,12 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 
 
 		this.virtualDirectoryManager.getAllDevices().forEach(device => {
-		let settingName = `Device ID: ${device.uuid.substring(0, 8)}`;
+		let settingName = `Device ID: ${device.uuid.substring(0, 8)}, OS: ${device.os}`;
 		if (device.uuid === this.deviceUUID) {
 			settingName += ' (Current device)';
 		}
 		new Setting(containerEl)
 			.setName(settingName)
-			.setDesc(`OS: ${device.os}`)
 			.addText(text => text
 				.setValue(device.name)
 				.onChange(async (value) => {
@@ -422,6 +421,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 					}else{
 						this.showConfirmDialog(
 							'Confirm Device Deletion',
+							// FIXME list all the virtual directories for this device
 							`If you delete this device (${device.name}), all the virtual directory settings of this device will be removed. Are you sure you want to continue?`,
 							async () => {
 								await this.virtualDirectoryManager.removeDevice(device.uuid);
@@ -459,7 +459,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 
 		// Add new virtual directory button
 		const addDirectorySetting = new Setting(containerEl)
-			.setName('Add New Virtual Directory')
+			.setName('Add new virtual directory')
 			.setDesc(createFragment(f => {
 				f.appendText('Add a new virtual directory configuration, ');
 				f.createEl('code', { text: 'home' });
@@ -468,13 +468,13 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 				f.appendText(' are predefined');
 				const ul = f.createEl('ul');
 				ul.createEl('li', {}, li => {
-					li.appendText('Directory name ');
+					li.appendText('Virtual directory ');
 					li.createEl('code', { text: 'home' });
 					li.appendText(' is linked to your home directory: ');
 					li.createEl('code', { text: homeDirectory || 'Not set' });
 				});
 				ul.createEl('li', {}, li => {
-					li.appendText('Directory name ');
+					li.appendText('Virtual directory ');
 					li.createEl('code', { text: 'vault' });
 					li.appendText(' is linked to your vault directory: ');
 					li.createEl('code', { text: vaultDirectory || 'Not set' });
@@ -482,7 +482,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 			}));
 
 		const nameInput = new TextComponent(addDirectorySetting.controlEl)
-			.setPlaceholder('Directory name')
+			.setPlaceholder('Virtual directory name')
 			.setValue('');
 
 		new ButtonComponent(addDirectorySetting.controlEl)
@@ -499,26 +499,58 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 
 		// Display existing virtual directories
 		const directories = this.virtualDirectoryManager.getAllDirectories();
-		Object.entries(directories).forEach(([dirName, devices]) => {
-			// Create section for each virtual directory
-			const dirSection = containerEl.createEl('div', { cls: 'virtual-directory-section' });
+		// 		new Setting(pathCell)
+		// 			.addText(text => text
+		// 				.setValue(devices[device.uuid]?.path || '')
+		// 				.onChange(async (value) => {
+		// 					try {
+		// 						await this.virtualDirectoryManager.setDirectory(dirName, device.uuid, value);
+		// 					} catch (error) {
+		// 						new Notice(error.message);
+		// 					}
+		// 				}));
 
-			// Directory name with edit functionality
-			const dirHeader = dirSection.createEl('div', { cls: 'directory-header' });
-			new Setting(dirHeader)
-				.setName("Directory name")
-				.addText(text => text
-					.setValue(dirName)
-					.onChange(async (value) => {
-						if (value && value !== dirName) {
-							try {
-								await this.virtualDirectoryManager.renameDirectory(dirName, value);
-								this.display();
-							} catch (error) {
-								new Notice(error.message);
-							}
-						}
-					}))
+		// 		// Action column
+		// 		const actionCell = row.createEl('td');
+		// 		// if this is the current device, show a button to open a file browser to let user select a directory
+		// 		if (device.uuid === this.deviceUUID) {
+		// 			new Setting(actionCell)
+		// 				.addExtraButton(button => button
+		// 					.setIcon('folder')
+		// 					.setTooltip('Open file browser')
+		// 					.onClick(async () => {
+		// 						// @ts-ignore
+		// 						// eslint-disable-next-line @typescript-eslint/no-var-requires
+		// 						const { remote } = require('electron');
+		// 						const dialog = remote.dialog;
+		// 						const result = await dialog.showOpenDialog({
+		// 							properties: ['openDirectory'],
+		// 						});
+		// 						if (!result.canceled && result.filePaths.length > 0) {
+		// 							const path = result.filePaths[0];
+		// 							try {
+		// 								await this.virtualDirectoryManager.setLocalDirectory(dirName, path);
+		// 								this.display();
+		// 							} catch (error) {
+		// 								new Notice(error.message);
+		// 							}
+		// 						}
+		// 					}));
+		// 		}
+		// 	});
+		// });
+
+		Object.entries(directories).forEach(([dirName, devices]) => {
+			const dirSection = containerEl.createEl('div', { cls: 'virtual-directory-section' });
+			new Setting(dirSection)
+				// .setName(createFragment(f => {
+				// 	f.appendText('Virtual directory: ');
+				// 	f.createEl('code', { text: dirName });
+				// }))
+				.setName(`Virtual directory: ${dirName}`)
+				// .setDesc(createFragment(f => {
+				// 	f.createEl('p', { text: 'Configure virtual directory settings for different devices.' });
+				// }))
 				.addExtraButton(button => button
 					.setIcon('trash')
 					.setTooltip('Delete directory')
@@ -527,77 +559,56 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 							'Confirm Directory Deletion',
 							`If you delete this virtual directory (${dirName}), all links using this directory in your notes will be broken. Are you sure you want to continue?`,
 							async () => {
-								try {
-									await this.virtualDirectoryManager.deleteDirectory(dirName);
-									this.display();
-								} catch (error) {
-									new Notice(error.message);
-								}
-							});
-					}));
-
-			// Create table for device paths
-			const dirTable = dirSection.createEl('table', { cls: 'directory-paths-table' });
-			const dirThead = dirTable.createEl('thead');
-			const dirHeaderRow = dirThead.createEl('tr');
-			['Device ID', 'OS', 'Device Name', 'Path', ''].forEach(text => {
-				dirHeaderRow.createEl('th', { text });
-			});
-
-			const dirTbody = dirTable.createEl('tbody');
-			this.virtualDirectoryManager.getAllDevices().forEach(device => {
-				const row = dirTbody.createEl('tr');
-
-				// Device info column - only show first 8 characters of UUID
-				row.createEl('td', { text: device.uuid.substring(0, 8) });
-				row.createEl('td', { text: device.os });
-				row.createEl('td', { 
-					text: device.name,
-					cls: `device-name-${device.uuid}`
-				});
-
-				// Path column with edit functionality
-				const pathCell = row.createEl('td');
-				new Setting(pathCell)
-					.addText(text => text
-						.setValue(devices[device.uuid]?.path || '')
-						.onChange(async (value) => {
-							try {
-								await this.virtualDirectoryManager.setDirectory(dirName, device.uuid, value);
-							} catch (error) {
-								new Notice(error.message);
+								await this.virtualDirectoryManager.deleteDirectory(dirName);
+								this.display();
 							}
-						}));
-
-				// Action column
-				const actionCell = row.createEl('td');
-				// if this is the current device, show a button to open a file browser to let user select a directory
-				if (device.uuid === this.deviceUUID) {
-					new Setting(actionCell)
-						.addExtraButton(button => button
-							.setIcon('folder')
-							.setTooltip('Open file browser')
-							.onClick(async () => {
-								// @ts-ignore
-								// eslint-disable-next-line @typescript-eslint/no-var-requires
-								const { remote } = require('electron');
-								const dialog = remote.dialog;
-								const result = await dialog.showOpenDialog({
-									properties: ['openDirectory'],
+						);
+					}));
+				this.virtualDirectoryManager.getAllDevices().forEach(device => {
+						const item = new Setting(dirSection)
+							.setName(createFragment(f => {
+								f.createEl('span', { 
+									text: device.name,
+									cls: `device-name-${device.uuid}`
 								});
-								if (!result.canceled && result.filePaths.length > 0) {
-									const path = result.filePaths[0];
+								f.createEl('span', { text: ` ( Device ID: ${device.uuid.substring(0, 8)}, OS: ${device.os})` });
+							}))
+							.addText(text => text
+								.setValue(devices[device.uuid]?.path || '')
+								.onChange(async (value) => {
 									try {
-										await this.virtualDirectoryManager.setLocalDirectory(dirName, path);
-										this.display();
+										await this.virtualDirectoryManager.setDirectory(dirName, device.uuid, value);
 									} catch (error) {
 										new Notice(error.message);
 									}
-								}
-							}));
-				}
-			});
+								}));
+						if(device.uuid === this.deviceUUID){
+							item.addExtraButton(button => button
+								.setIcon('folder')
+								.setTooltip('Open file browser')
+								.onClick(async () => {
+									// @ts-ignore
+									// eslint-disable-next-line @typescript-eslint/no-var-requires
+									const { remote } = require('electron');
+									const dialog = remote.dialog;
+									const result = await dialog.showOpenDialog({
+										properties: ['openDirectory'],
+									});
+									if (!result.canceled && result.filePaths.length > 0) {
+										const path = result.filePaths[0];
+										try {
+											await this.virtualDirectoryManager.setLocalDirectory(dirName, path);
+											this.display();
+										} catch (error) {
+											new Notice(error.message);
+										}
+									}
+								}));
+						}
+					});
 		});
+
+
 	}
 
 	private updateDeviceNameDisplay(uuid: string, newName: string) {

@@ -209,7 +209,7 @@ function getFilePathFromUrl(url: string, context: CrossComputerLinkContext) {
 	const directoryId = urlWithoutParams.split('/')[2];
 	const decodedPath = decodeURIComponent(parsedParams.p);
 
-	const directoryPath = context.directoryConfigManager.getDirectoryById(directoryId);
+	const directoryPath = context.directoryConfigManager.getLocalDirectory(directoryId);
 	if(!directoryPath) {
 		throw new Error("Invalid directory id: " + directoryId);
 	}

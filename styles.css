@@ -98,8 +98,9 @@ If your plugin does not need CSS, delete this file.
 }
 
 .virtual-directory-section {
-	border: 1px solid var(--background-modifier-border);
+	border: 1px dashed var(--background-modifier-border);
 	padding: 10px;
+	margin-bottom: 10px;
 }
 
 .directory-paths-table th {
