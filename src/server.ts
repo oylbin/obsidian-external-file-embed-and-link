@@ -7,7 +7,7 @@ import { getContentType, openFileWithDefaultProgram, parseUrlParams } from './ut
 import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
 import pdf_min_js from 'inline:./assets/pdf.js';
 import pdf_worker_min_js from 'inline:./assets/pdf.worker.js';
-import { DirectoryConfigManager } from 'settings';
+import { VirtualDirectoryManager } from 'settings';
 
 const PDF_HTML_TEMPLATE = `
 <!DOCTYPE html>
@@ -150,7 +150,7 @@ export class CrossComputerLinkContext {
 	vaultDirectory: string;
 	port: number;
 	pluginDirectory: string;
-	directoryConfigManager: DirectoryConfigManager;
+	directoryConfigManager: VirtualDirectoryManager;
 }
 
 export function getTemplate(extname: string) {
