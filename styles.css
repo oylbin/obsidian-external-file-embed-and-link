@@ -117,3 +117,20 @@ If your plugin does not need CSS, delete this file.
 	font-weight: normal;
 	text-align: center;
 }
+
+/* Directory Selection Modal Styles */
+.modal-title {
+	margin-bottom: 16px;
+}
+
+.directory-buttons-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.directory-button {
+	width: 100%;
+	text-align: left;
+	padding: 8px;
+}

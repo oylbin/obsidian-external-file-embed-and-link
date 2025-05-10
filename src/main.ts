@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Platform, Modal } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Platform, Modal, App } from 'obsidian';
 import * as http from 'http';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -16,7 +16,7 @@ class DirectorySelectionModal extends Modal {
 	private resolvePromise: ((value: string | null) => void) | null = null;
 
 	constructor(
-		app: any,
+		app: App,
 		private directories: Record<string, string>
 	) {
 		super(app);
@@ -26,35 +26,26 @@ class DirectorySelectionModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		// Create directory selection dialog
-		const directorySelect = document.createElement('select');
-		directorySelect.classList.add('directory-select');
+		// Add title
+		contentEl.createEl('h2', {
+			text: 'Which virtual directory to use for the link',
+			cls: 'modal-title'
+		});
+
+		// Create container for directory buttons with vertical layout
+		const buttonContainer = contentEl.createDiv('directory-buttons-container');
 		
-		// Add options for each directory
+		// Add a button for each directory
 		Object.entries(this.directories).forEach(([id, path]) => {
-			const option = document.createElement('option');
-			option.value = id;
-			option.textContent = `${id} (${path})`;
-			directorySelect.appendChild(option);
-		});
-
-		// Create dialog content
-		contentEl.appendChild(document.createTextNode('Select directory: '));
-		contentEl.appendChild(directorySelect);
-
-		// Add buttons
-		const buttonContainer = contentEl.createDiv('modal-button-container');
-		const selectButton = buttonContainer.createEl('button', { text: 'Select' });
-		const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
-
-		selectButton.addEventListener('click', () => {
-			this.selectedDirectoryId = directorySelect.value;
-			this.close();
-		});
-
-		cancelButton.addEventListener('click', () => {
-			this.selectedDirectoryId = null;
-			this.close();
+			const button = buttonContainer.createEl('button', {
+				text: `${id} (${path})`,
+				cls: 'directory-button'
+			});
+			
+			button.addEventListener('click', () => {
+				this.selectedDirectoryId = id;
+				this.close();
+			});
 		});
 	}
 
