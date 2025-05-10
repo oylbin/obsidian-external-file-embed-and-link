@@ -379,67 +379,62 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		}
 	}
 
-	private displayDirectories(containerEl: HTMLElement) {
+	private displayDevices(containerEl: HTMLElement) {
 		// Display devices section
 		new Setting(containerEl)
-			.setName('Devices')
-			.setHeading()
-			.setDesc(createFragment(f => {
-				f.createEl('p', { text: 'Configure device names. New devices will be added automatically when the plugin is first loaded.' });
-				f.createEl('p', {}, p => {
-					p.appendText('Learn more about ');
-					p.createEl('a', {
-						text: 'device management',
-						href: 'https://github.com/your-repo/your-plugin'
-					});
-					p.appendText('.');
-				});
-			}));
+		.setName('Devices')
+		.setHeading()
+		.setDesc('You can change the name of a device to make it more recognizable. New devices will be added automatically when the plugin is first loaded on a new device. ');
+
 
 		this.virtualDirectoryManager.getAllDevices().forEach(device => {
-			let settingName = `Device ID: ${device.uuid.substring(0, 8)}`;
-			if (device.uuid === this.deviceUUID) {
-				settingName += ' (Current device)';
-			}
-			new Setting(containerEl)
-				.setName(settingName)
-				.setDesc(`OS: ${device.os}`)
-				.addText(text => text
-					.setValue(device.name)
-					.onChange(async (value) => {
-						const oldName = device.name;
-						try {
-							await this.virtualDirectoryManager.setDeviceName(device.uuid, value);
-						} catch (error) {
-							new Notice(error.message);
-							// revert the change
-							this.virtualDirectoryManager.setDeviceName(device.uuid, oldName);
-							// set the text back to the old name
-							text.setValue(oldName);
-						}
-					}))
-				.addExtraButton(button => button
-					.setIcon('trash')
-					.setTooltip('Delete device')
-					.onClick(async () => {
-						if(device.uuid === this.deviceUUID){
-							// show a dialog to tell user can not delete current device
-							new Notice('Cannot delete current device.');
-							return;
-						}else{
-							this.showConfirmDialog(
-								'Confirm Device Deletion',
-								`If you delete this device (${device.name}), all the virtual directory settings of this device will be removed. Are you sure you want to continue?`,
-								async () => {
-									await this.virtualDirectoryManager.removeDevice(device.uuid);
-									this.display();
-								}
-							);
-						}						
-					}));
+		let settingName = `Device ID: ${device.uuid.substring(0, 8)}`;
+		if (device.uuid === this.deviceUUID) {
+			settingName += ' (Current device)';
+		}
+		new Setting(containerEl)
+			.setName(settingName)
+			.setDesc(`OS: ${device.os}`)
+			.addText(text => text
+				.setValue(device.name)
+				.onChange(async (value) => {
+					const oldName = device.name;
+					try {
+						await this.virtualDirectoryManager.setDeviceName(device.uuid, value);
+						// refresh the device list
+						this.updateDeviceNameDisplay(device.uuid, value);
+					} catch (error) {
+						new Notice(error.message);
+						// revert the change
+						this.virtualDirectoryManager.setDeviceName(device.uuid, oldName);
+						// set the text back to the old name
+						text.setValue(oldName);
+					}
+				}))
+			.addExtraButton(button => button
+				.setIcon('trash')
+				.setTooltip('Delete device')
+				.onClick(async () => {
+					if(device.uuid === this.deviceUUID){
+						// show a dialog to tell user can not delete current device
+						new Notice('Cannot delete current device.');
+						return;
+					}else{
+						this.showConfirmDialog(
+							'Confirm Device Deletion',
+							`If you delete this device (${device.name}), all the virtual directory settings of this device will be removed. Are you sure you want to continue?`,
+							async () => {
+								await this.virtualDirectoryManager.removeDevice(device.uuid);
+								this.display();
+							}
+						);
+					}						
+				}));
 		})
+	}
 
-		
+	private displayDirectories(containerEl: HTMLElement) {
+		// Display directories section
 		const homeDirectory = this.virtualDirectoryManager.getLocalDirectory('home');
 		const vaultDirectory = this.virtualDirectoryManager.getLocalDirectory('vault');
 
@@ -449,19 +444,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 			.setDesc(createFragment(f => {
 				f.createEl('p', { text: 'Configure virtual directories that can be used to locate files on different devices.' });
 				f.createEl('p', { text: 'Predefined virtual directories:' });
-				const ul = f.createEl('ul');
-				ul.createEl('li', {}, li => {
-					li.appendText('Directory name ');
-					li.createEl('code', { text: 'home' });
-					li.appendText(' is linked to your home directory: ');
-					li.createEl('code', { text: homeDirectory || 'Not set' });
-				});
-				ul.createEl('li', {}, li => {
-					li.appendText('Directory name ');
-					li.createEl('code', { text: 'vault' });
-					li.appendText(' is linked to your vault directory: ');
-					li.createEl('code', { text: vaultDirectory || 'Not set' });
-				});
+
 				f.createEl('p', {}, p => {
 					p.appendText('Learn more about ');
 					p.createEl('a', {
@@ -483,6 +466,19 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 				f.appendText(' and ');
 				f.createEl('code', { text: 'vault' });
 				f.appendText(' are predefined');
+				const ul = f.createEl('ul');
+				ul.createEl('li', {}, li => {
+					li.appendText('Directory name ');
+					li.createEl('code', { text: 'home' });
+					li.appendText(' is linked to your home directory: ');
+					li.createEl('code', { text: homeDirectory || 'Not set' });
+				});
+				ul.createEl('li', {}, li => {
+					li.appendText('Directory name ');
+					li.createEl('code', { text: 'vault' });
+					li.appendText(' is linked to your vault directory: ');
+					li.createEl('code', { text: vaultDirectory || 'Not set' });
+				});
 			}));
 
 		const nameInput = new TextComponent(addDirectorySetting.controlEl)
@@ -552,12 +548,13 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 			this.virtualDirectoryManager.getAllDevices().forEach(device => {
 				const row = dirTbody.createEl('tr');
 
-				//const deviceInfoStr = `${device.uuid.substring(0, 8)} - ${device.os} - ${device.name}`;
-
 				// Device info column - only show first 8 characters of UUID
 				row.createEl('td', { text: device.uuid.substring(0, 8) });
 				row.createEl('td', { text: device.os });
-				row.createEl('td', { text: device.name });
+				row.createEl('td', { 
+					text: device.name,
+					cls: `device-name-${device.uuid}`
+				});
 
 				// Path column with edit functionality
 				const pathCell = row.createEl('td');
@@ -603,6 +600,13 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		});
 	}
 
+	private updateDeviceNameDisplay(uuid: string, newName: string) {
+		const deviceNameCells = document.querySelectorAll(`.device-name-${uuid}`);
+		deviceNameCells.forEach(cell => {
+			cell.setText(newName);
+		});
+	}
+
 	display(): void {
 		this.virtualDirectoryManager.registerCurrentDevice();
 		const { containerEl } = this;
@@ -611,6 +615,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 		// this.displayCommands(containerEl);
 		// this.displayDragAndDrop(containerEl);
 		this.displayDirectories(containerEl);
+		this.displayDevices(containerEl);
 
 	}
 }
