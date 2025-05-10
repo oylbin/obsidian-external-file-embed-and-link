@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { httpRequestHandler, findAvailablePort, CrossComputerLinkContext } from './server';
 import { openFileWithDefaultProgram, getRelativePath, extractHeaderSection } from './utils';
-import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction, DirectoryConfigManagerImpl } from './settings';
+import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction, VirtualDirectoryManagerImpl } from './settings';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedFolderArguments, parseEmbedPdfArguments } from './embedProcessor';
 import { getLocalMachineId } from './local-settings';
 
@@ -169,7 +169,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.startHttpServer();
 
 		const localMachineId = await getLocalMachineId(this.manifest.id);
-		this.context.directoryConfigManager = new DirectoryConfigManagerImpl(this, localMachineId);
+		this.context.directoryConfigManager = new VirtualDirectoryManagerImpl(this, localMachineId);
 		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.context.directoryConfigManager, localMachineId));
 
 		// Register commands based on settings
