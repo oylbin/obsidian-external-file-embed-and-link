@@ -7,7 +7,7 @@ import { getContentType, openFileWithDefaultProgram, parseUrlParams } from './ut
 import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
 import pdf_min_js from 'inline:./assets/pdf.js';
 import pdf_worker_min_js from 'inline:./assets/pdf.worker.js';
-import { VirtualDirectoryManager } from 'settings';
+import { VirtualDirectoryManager } from './VirtualDirectoryManager';
 
 const PDF_HTML_TEMPLATE = `
 <!DOCTYPE html>

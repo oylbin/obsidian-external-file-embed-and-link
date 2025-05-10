@@ -4,7 +4,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { httpRequestHandler, findAvailablePort, CrossComputerLinkContext } from './server';
 import { openFileWithDefaultProgram, getRelativePath, extractHeaderSection } from './utils';
-import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction, VirtualDirectoryManagerImpl } from './settings';
+import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction } from './settings';
+import { VirtualDirectoryManagerImpl } from './VirtualDirectoryManager';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedFolderArguments, parseEmbedPdfArguments } from './embedProcessor';
 import { getLocalMachineId } from './local-settings';
 
