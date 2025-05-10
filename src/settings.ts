@@ -351,47 +351,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 			});
 
 		// Display existing virtual directories
-		const directories = this.virtualDirectoryManager.getAllDirectories();
-		// 		new Setting(pathCell)
-		// 			.addText(text => text
-		// 				.setValue(devices[device.uuid]?.path || '')
-		// 				.onChange(async (value) => {
-		// 					try {
-		// 						await this.virtualDirectoryManager.setDirectory(dirName, device.uuid, value);
-		// 					} catch (error) {
-		// 						new Notice(error.message);
-		// 					}
-		// 				}));
-
-		// 		// Action column
-		// 		const actionCell = row.createEl('td');
-		// 		// if this is the current device, show a button to open a file browser to let user select a directory
-		// 		if (device.uuid === this.deviceUUID) {
-		// 			new Setting(actionCell)
-		// 				.addExtraButton(button => button
-		// 					.setIcon('folder')
-		// 					.setTooltip('Open file browser')
-		// 					.onClick(async () => {
-		// 						// @ts-ignore
-		// 						// eslint-disable-next-line @typescript-eslint/no-var-requires
-		// 						const { remote } = require('electron');
-		// 						const dialog = remote.dialog;
-		// 						const result = await dialog.showOpenDialog({
-		// 							properties: ['openDirectory'],
-		// 						});
-		// 						if (!result.canceled && result.filePaths.length > 0) {
-		// 							const path = result.filePaths[0];
-		// 							try {
-		// 								await this.virtualDirectoryManager.setLocalDirectory(dirName, path);
-		// 								this.display();
-		// 							} catch (error) {
-		// 								new Notice(error.message);
-		// 							}
-		// 						}
-		// 					}));
-		// 		}
-		// 	});
-		// });
+		const directories = this.virtualDirectoryManager.getAllDirectories();		
 
 		Object.entries(directories).forEach(([dirName, devices]) => {
 			const dirSection = containerEl.createEl('div', { cls: 'virtual-directory-section' });
@@ -425,16 +385,8 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 									cls: `device-name-${device.uuid}`
 								});
 								f.createEl('span', { text: ` ( Device ID: ${device.uuid.substring(0, 8)}, OS: ${device.os})` });
-							}))
-							.addText(text => text
-								.setValue(devices[device.uuid]?.path || '')
-								.onChange(async (value) => {
-									try {
-										await this.virtualDirectoryManager.setDirectory(dirName, device.uuid, value);
-									} catch (error) {
-										new Notice(error.message);
-									}
-								}));
+							}));
+
 						if(device.uuid === this.deviceUUID){
 							item.addExtraButton(button => button
 								.setIcon('folder')
@@ -458,6 +410,15 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 									}
 								}));
 						}
+						item.addText(text => text
+							.setValue(devices[device.uuid]?.path || '')
+							.onChange(async (value) => {
+								try {
+									await this.virtualDirectoryManager.setDirectory(dirName, device.uuid, value);
+								} catch (error) {
+									new Notice(error.message);
+								}
+							}));
 					});
 		});
 
