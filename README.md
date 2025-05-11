@@ -103,7 +103,7 @@ home://Videos/test.mp4|800x600
 
 #### Folders
 
-You can embed a folder by put  '/#' after the folder name , and it will list all the files in the folder.
+You can embed a folder by put  `/#` after the folder name , and it will list all the files in the folder.
 You can also add parameters after `#` to filter the files to embed.
 
 ~~~markdown
