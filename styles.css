@@ -6,6 +6,9 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+/* External File Embed and Link Plugin Styles */
+
+/* PDF Embed Styles */
 .external-embed-pdf-iframe {
 	border: none;
 }
@@ -15,11 +18,13 @@ If your plugin does not need CSS, delete this file.
 	height: var(--iframe-height);
 }
 
+/* Markdown Element Styles */
 .external-embed-markdown-element {
 	border: 1px solid gray;
-	padding: 10px;
+	padding: 1em;
 }
 
+/* Folder View Styles */
 .external-embed-folder-header {
 	font-weight: bold;
 	margin-bottom: 8px;
@@ -48,4 +53,46 @@ If your plugin does not need CSS, delete this file.
 .external-embed-folder-error {
 	color: var(--text-error);
 	margin-top: 8px;
+}
+
+/* Error Message Styles */
+.external-embed-error {
+	color: var(--text-error);
+	border: 1px dashed var(--background-modifier-border);
+	margin-top: 8px;
+}
+
+/* Settings Section Styles */
+.external-embed-sub-section {
+	border-top: 1px dashed var(--background-modifier-border);
+	padding-left: 1em;
+	padding-right: 1em;
+	margin-bottom: 10px;
+}
+
+.external-embed-sub-section .setting-item {
+	padding-top: 0;
+	padding-bottom: 0;
+	border-top: none;
+}
+
+.external-embed-sub-section .setting-item-name {
+	font-size: var(--font-ui-small);
+}
+
+/* Modal Styles */
+.external-embed-modal-title {
+	margin-bottom: 16px;
+}
+
+.external-embed-modal-button-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.external-embed-directory-button {
+	width: 100%;
+	text-align: left;
+	padding: 8px;
 }
