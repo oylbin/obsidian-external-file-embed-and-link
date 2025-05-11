@@ -58,6 +58,7 @@ If your plugin does not need CSS, delete this file.
 /* Error Message Styles */
 .external-embed-error {
 	color: var(--text-error);
+	border: 1px dashed var(--background-modifier-border);
 	margin-top: 8px;
 }
 

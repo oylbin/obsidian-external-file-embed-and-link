@@ -380,7 +380,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		const errorDiv = document.createElement("div");
 		if (Array.isArray(errorMessage)) {
 			errorMessage.forEach(msg => {
-				const errorMsg = document.createElement("p");
+				const errorMsg = document.createElement("div");
 				errorMsg.textContent = msg;
 				errorDiv.appendChild(errorMsg);
 			});
@@ -431,40 +431,43 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			});
 		});
 		element.querySelectorAll('.LinkRelativeTo').forEach((el) => {
-			console.log("LinkRelativeTo", el);
-			let url = el.getAttribute('href');
-			if (!url) {
-				new Notice("Failed to open file: url is not set");
-				return;
-			}
-			// remove the first #
-			url = url.substring(1);
-			console.log("url", url);
-			const directoryId = url.split(':')[0];
-			if (!directoryId) {
-				new Notice("Failed to open file: directoryId is not set");
-				return;
-			}
-			const relativePath = url.split(':')[1];
-			if (!relativePath) {
-				new Notice("Failed to open file: relativePath is not set");
-				return;
-			}
-			const direcotryPath = this.context.directoryConfigManager.getLocalDirectory(directoryId);
-			if (!direcotryPath) {
-				new Notice("Failed to open file: directory not found");
-				return;
-			}
-			const fullPath = path.join(direcotryPath, relativePath);
-			console.log("fullPath", fullPath);
-			el.textContent = path.basename(fullPath);
-			el.addEventListener("click", () => {
-				openFileWithDefaultProgram(fullPath, (error) => {
-					if (error) {
-						new Notice("Failed to open file: " + error.message);
-					}
+			try{
+				// console.log("LinkRelativeTo", el);
+				const url0 = el.getAttribute('href');
+				if (!url0) {
+					throw new Error(`href is not set for link "${el.textContent}"`);
+				}
+				// remove the first #
+				const url = url0.substring(1);
+				const directoryId = url.split(':')[0];
+				if (!directoryId) {
+					throw new Error(`Failed to extract directoryId from href "${url0}" for link "${el.textContent}"`);
+				}
+				const relativePath = url.split(':')[1];
+				if (!relativePath) {
+					throw new Error(`Failed to extract relativePath from href "${url0}" for link "${el.textContent}"`);
+				}
+				const direcotryPath = this.context.directoryConfigManager.getLocalDirectory(directoryId);
+				if (!direcotryPath) {
+					throw new Error(`Virtual directory "${directoryId}" not found for link "${el.textContent}"`);
+				}
+				const fullPath = path.join(direcotryPath, relativePath);
+				if(!existsSync(fullPath)) {
+					throw new Error(`Virtual file url "${url0}" is resolved to non-existent file "${fullPath}" for link "${el.textContent}"`);
+				}
+				el.textContent = path.basename(fullPath);
+				el.addEventListener("click", () => {
+					openFileWithDefaultProgram(fullPath, (error) => {
+						if (error) {
+							new Notice("Failed to open file: " + error.message);
+						}
+					});
 				});
-			});
+			} catch(error){
+				el.addEventListener("click", () => {
+					new Notice(`Inline link error: ${error}`);
+				});
+			}
 		});
 	}
 
@@ -555,6 +558,15 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		const embedData = parseEmbedData(filePath);
 		// console.log("embedData", embedData);
+		const fullPath = path.join(direcotryPath, embedData.embedFilePath);
+		if(!existsSync(fullPath)) {
+			const errorMessage = [
+				`Can not embed file from "${directoryId}://${relativePath}"`,
+				`The file "${fullPath}" does not exist.`
+			];
+			this.embedError(errorMessage, element, context);
+			return;
+		}
 		// check if filename contains '|', the text after '|' is the embed arguments
 		const fileUrl = `http://127.0.0.1:${this.context.port}/download/${directoryId}?p=${embedData.embedFilePath}`;
 		if (embedData.embedType === 'pdf') {
