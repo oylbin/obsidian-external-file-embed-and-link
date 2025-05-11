@@ -10,6 +10,7 @@ import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedFolderArgument
 import { getLocalMachineId } from './local-settings';
 // @ts-ignore
 import { remote } from 'electron';
+import { existsSync } from 'fs';
 
 class DirectorySelectionModal extends Modal {
 	private selectedDirectoryId: string | null = null;
@@ -201,6 +202,12 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		if (selectedDirectoryId) {
 			const selectedDirectoryPath = localDirectories[selectedDirectoryId];
 
+			// check if the directory exists
+			if (!existsSync(selectedDirectoryPath)) {
+				new Notice(`Virtual directory "${selectedDirectoryId}" points to "${selectedDirectoryPath}", but it does not exist. Please fix the directory in settings.`);
+				return;
+			}
+
 			// Show file picker for selected directory
 			const result = await remote.dialog.showOpenDialog({
 				defaultPath: selectedDirectoryPath,
@@ -212,10 +219,13 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 			if (!result.canceled && result.filePaths.length > 0) {
 				result.filePaths.forEach((filePath: string) => {
-					console.log("filePath", filePath);
-					const relativePath = getRelativePath(selectedDirectoryPath, filePath);
-					const embedCode = createCodeFn(selectedDirectoryId, relativePath);
-					this.insertText(editor, embedCode);
+					try{
+						const relativePath = getRelativePath(selectedDirectoryPath, filePath);
+						const embedCode = createCodeFn(selectedDirectoryId, relativePath);
+						this.insertText(editor, embedCode);
+					} catch (error) {
+						new Notice(`Failed to create external embed or inline link for "${filePath}": ${error}`);
+					}
 				});
 			}
 		}

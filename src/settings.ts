@@ -155,7 +155,7 @@ export class CrossComputerLinkSettingTab extends PluginSettingTab {
 					p.appendText('Configure virtual directories that can be used to locate files on different devices. ');
 					p.createEl('a', {
 						text: 'Learn more',
-						href: 'https://github.com/your-repo/your-plugin#virtual-directories'
+						href: 'https://github.com/oylbin/obsidian-external-file-embed-and-link?tab=readme-ov-file#virtual-directories'
 					});
 				});
 				

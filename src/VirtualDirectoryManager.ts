@@ -130,15 +130,16 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 	}
 
 	setLocalDirectory(virtualDirectoryName: string, directory: string): Promise<void> {
-
-		// check if the directory exists
-		if (!existsSync(directory)) {
-			throw new Error("Directory does not exist");
-		}
 		return this.setDirectory(virtualDirectoryName, this.deviceUUID, directory);
 	}
 
 	setDirectory(virtualDirectoryName: string, uuid: string, directory: string): Promise<void> {
+		if(uuid === this.deviceUUID){
+			// check if the directory exists
+			if (!existsSync(directory)) {
+				throw new Error(`Directory does not exist: ${directory}`);
+			}
+		}
 		if (!this.plugin.settings.virtualDirectories[virtualDirectoryName]) {
 			this.plugin.settings.virtualDirectories[virtualDirectoryName] = {};
 		}
