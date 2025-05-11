@@ -6,6 +6,9 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+/* External File Embed and Link Plugin Styles */
+
+/* PDF Embed Styles */
 .external-embed-pdf-iframe {
 	border: none;
 }
@@ -15,11 +18,13 @@ If your plugin does not need CSS, delete this file.
 	height: var(--iframe-height);
 }
 
+/* Markdown Element Styles */
 .external-embed-markdown-element {
 	border: 1px solid gray;
 	padding: 10px;
 }
 
+/* Folder View Styles */
 .external-embed-folder-header {
 	font-weight: bold;
 	margin-bottom: 8px;
@@ -50,86 +55,42 @@ If your plugin does not need CSS, delete this file.
 	margin-top: 8px;
 }
 
-.commands-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
-}
-
-.commands-table th,
-.commands-table td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.commands-table th {
-    font-weight: bold;
-    background-color: var(--background-secondary);
-}
-
-.commands-table tr:hover {
-    background-color: var(--background-secondary);
-}
-
-.commands-table td .setting-item {
-    padding: 0;
-    border: none;
-}
-
-.commands-table td .setting-item-control {
-    justify-content: flex-start;
-}
-
+/* Error Message Styles */
 .external-embed-error {
 	color: var(--text-error);
 	margin-top: 8px;
 }
 
-.devices-table th {
-	font-weight: normal;
-	text-align: center;
-}
-
-.devices-table td {
-	padding-left: 10px;
-	padding-right: 10px;
-	text-align: center;
-}
-
-.virtual-directory-section {
-	border: 1px dashed var(--background-modifier-border);
-	padding: 10px;
+/* Settings Section Styles */
+.external-embed-sub-section {
+	border-top: 1px dashed var(--background-modifier-border);
+	padding-left: 1em;
+	padding-right: 1em;
 	margin-bottom: 10px;
 }
 
-.directory-paths-table th {
-	font-weight: normal;
-	text-align: center;
+.external-embed-sub-section .setting-item {
+	padding-top: 0;
+	padding-bottom: 0;
+	border-top: none;
 }
 
-.directory-paths-table td {
-	padding-left: 10px;
-	padding-right: 10px;
+.external-embed-sub-section .setting-item-name {
+	font-size: var(--font-ui-small);
 }
 
-.predefined-directories-table th {
-	font-weight: normal;
-	text-align: center;
-}
-
-/* Directory Selection Modal Styles */
-.modal-title {
+/* Modal Styles */
+.external-embed-modal-title {
 	margin-bottom: 16px;
 }
 
-.directory-buttons-container {
+.external-embed-modal-button-container {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.directory-button {
+.external-embed-directory-button {
 	width: 100%;
 	text-align: left;
 	padding: 8px;

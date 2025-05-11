@@ -29,7 +29,7 @@ class DirectorySelectionModal extends Modal {
 		// Add title
 		contentEl.createEl('h2', {
 			text: 'Which virtual directory to use for the link',
-			cls: 'modal-title'
+			cls: 'external-embed-modal-title'
 		});
 
 		// Create container for directory buttons with vertical layout
@@ -39,7 +39,7 @@ class DirectorySelectionModal extends Modal {
 		Object.entries(this.directories).forEach(([id, path]) => {
 			const button = buttonContainer.createEl('button', {
 				text: `${id} (${path})`,
-				cls: 'directory-button'
+				cls: 'external-embed-directory-button'
 			});
 			
 			button.addEventListener('click', () => {
