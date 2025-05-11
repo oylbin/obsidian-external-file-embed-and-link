@@ -1,5 +1,5 @@
 import CrossComputerLinkPlugin from 'main';
-import { App, Platform, PluginSettingTab, Setting, TextComponent, ButtonComponent, Notice, Modal } from 'obsidian';
+import { App, PluginSettingTab, Setting, TextComponent, ButtonComponent, Notice, Modal } from 'obsidian';
 import { VirtualDirectoryManager } from 'VirtualDirectoryManager';
 export enum DragAction {
 	Default = 'default',
@@ -30,12 +30,6 @@ export interface VirtualDirectoriesMap {
 	[name: string]: Record<string, VirtualDirectoryItem>;
 }
 
-export interface CommandConfig {
-	id: string;
-	name: string;
-	enabled: boolean;
-}
-
 export interface CrossComputerLinkPluginSettings {
 	dragWithCtrl: DragAction;
 	dragWithShift: DragAction;
@@ -43,7 +37,6 @@ export interface CrossComputerLinkPluginSettings {
 	enableDragAndDrop: boolean;
 	devices: DevicesMap;
 	virtualDirectories: VirtualDirectoriesMap;
-	commands: CommandConfig[];
 }
 
 export const DEFAULT_SETTINGS: CrossComputerLinkPluginSettings = {
@@ -53,53 +46,7 @@ export const DEFAULT_SETTINGS: CrossComputerLinkPluginSettings = {
 	enableDragAndDrop: true,
 	virtualDirectories: {},
 	devices: {},
-	commands: [
-		{
-			id: 'add-external-embed',
-			name: 'Add external embed',
-			enabled: true
-		},
-		{
-			id: 'add-external-inline-link',
-			name: 'Add external inline link',
-			enabled: true
-		},
-		{
-			id: 'add-external-embed-relative-to-home',
-			name: 'Add external embed relative to home',
-			enabled: false
-		},
-		{
-			id: 'add-external-link-relative-to-home',
-			name: 'Add external link relative to home',
-			enabled: false
-		},
-		{
-			id: 'add-external-inline-link-relative-to-home',
-			name: 'Add external inline link relative to home',
-			enabled: false
-		},
-		{
-			id: 'add-external-embed-relative-to-vault',
-			name: 'Add external embed relative to vault',
-			enabled: false
-		},
-		{
-			id: 'add-external-link-relative-to-vault',
-			name: 'Add external link relative to vault',
-			enabled: false
-		},
-		{
-			id: 'add-external-inline-link-relative-to-vault',
-			name: 'Add external inline link relative to vault',
-			enabled: false
-		}
-	]
 }
-
-
-
-
 
 export class CrossComputerLinkSettingTab extends PluginSettingTab {
 	plugin: CrossComputerLinkPlugin;

@@ -1,10 +1,10 @@
-import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Platform, Modal, App } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, MarkdownPostProcessorContext, Modal, App } from 'obsidian';
 import * as http from 'http';
 import * as path from 'path';
 import * as fs from 'fs';
 import { httpRequestHandler, findAvailablePort, CrossComputerLinkContext } from './server';
 import { openFileWithDefaultProgram, getRelativePath, extractHeaderSection } from './utils';
-import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab, DragAction } from './settings';
+import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab } from './settings';
 import { VirtualDirectoryManagerImpl } from './VirtualDirectoryManager';
 import { parseEmbedArgumentWidthHeight, parseEmbedData, parseEmbedFolderArguments, parseEmbedPdfArguments } from './embedProcessor';
 import { getLocalMachineId } from './local-settings';
@@ -82,95 +82,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		editor.setCursor({ line: cursor.line, ch: cursor.ch + text.length });
 	}
 
-
-
-	private createEmbedRelativeToHome(editor: Editor, relativePath: string) {
-		const text = "\n```EmbedRelativeToHome\n" + relativePath + "\n```\n";
-		this.insertText(editor, text);
-	}
-	private createEmbedRelativeToVault(editor: Editor, relativePath: string) {
-		const text = "\n```EmbedRelativeToVault\n" + relativePath + "\n```\n";
-		this.insertText(editor, text);
-	}
-	private createLinkRelativeToHome(editor: Editor, relativePath: string) {
-		const text = "\n```LinkRelativeToHome\n" + relativePath + "\n```\n";
-		this.insertText(editor, text);
-	}
-	private createLinkRelativeToVault(editor: Editor, relativePath: string) {
-		const text = "\n```LinkRelativeToVault\n" + relativePath + "\n```\n";
-		this.insertText(editor, text);
-	}
-	private createInlineLinkRelativeToHome(editor: Editor, relativePath: string) {
-		const text = " <a href=\"#\" class=\"LinkRelativeToHome\">" + relativePath + "</a> ";
-		this.insertText(editor, text);
-	}
-	private createInlineLinkRelativeToVault(editor: Editor, relativePath: string) {
-		const text = " <a href=\"#\" class=\"LinkRelativeToVault\">" + relativePath + "</a> ";
-		this.insertText(editor, text);
-	}
-
-	private getActionFromEventKeys(event: DragEvent): DragAction {
-		// console.log(`shift: ${event.shiftKey}, ctrl: ${event.ctrlKey}, alt: ${event.altKey}, meta: ${event.metaKey}`);
-		if (Platform.isMacOS) {
-			if (event.altKey && event.shiftKey) {
-				return this.settings.dragWithCtrlShift;
-			} else if (event.shiftKey) {
-				return this.settings.dragWithShift;
-			} else if (event.altKey) {
-				return this.settings.dragWithCtrl;
-			} else {
-				return DragAction.Default;
-			}
-		} else {
-			if (event.ctrlKey && event.shiftKey) {
-				return this.settings.dragWithCtrlShift;
-			} else if (event.shiftKey) {
-				return this.settings.dragWithShift;
-			} else if (event.ctrlKey) {
-				return this.settings.dragWithCtrl;
-			} else {
-				return DragAction.Default;
-			}
-		}
-	}
-	private handleDragEvent(event: DragEvent, editor: Editor) {
-		// console.log("drop", event);
-		const action = this.getActionFromEventKeys(event);
-		if (action === DragAction.Default) {
-			return;
-		}
-		event.preventDefault();
-		event.stopPropagation();
-
-		const files = event.dataTransfer?.files;
-		// console.log("files", files);
-		if (files && files.length > 0) {
-			// for each file
-			for (let i = 0; i < files.length; i++) {
-				// @ts-ignore Property 'path' exists at runtime but is not typed
-				const fullpath = files[i].path;
-				if (action === DragAction.EmbedRelativeToHome) {
-					const relativePath = getRelativePath(this.context.homeDirectory, fullpath);
-					this.createEmbedRelativeToHome(editor, relativePath);
-				} else if (action === DragAction.EmbedRelativeToVault) {
-					const relativePath = getRelativePath(this.context.vaultDirectory, fullpath);
-					this.createEmbedRelativeToVault(editor, relativePath);
-				} else if (action === DragAction.LinkRelativeToHome) {
-					const relativePath = getRelativePath(this.context.homeDirectory, fullpath);
-					this.createLinkRelativeToHome(editor, relativePath);
-				} else if (action === DragAction.LinkRelativeToVault) {
-					const relativePath = getRelativePath(this.context.vaultDirectory, fullpath);
-					this.createLinkRelativeToVault(editor, relativePath);
-				} else if (action === DragAction.InlineLinkRelativeToHome) {
-					const relativePath = getRelativePath(this.context.homeDirectory, fullpath);
-					this.createInlineLinkRelativeToHome(editor, relativePath);
-				} else if (action === DragAction.InlineLinkRelativeToVault) {
-					const relativePath = getRelativePath(this.context.vaultDirectory, fullpath);
-					this.createInlineLinkRelativeToVault(editor, relativePath);
-				}
-			}
-		}
-	}
 	private startHttpServer() {
 		findAvailablePort(this.context.port)
 			.then((port: number) => {
@@ -228,96 +139,20 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.context.directoryConfigManager = new VirtualDirectoryManagerImpl(this, localMachineId);
 		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.context.directoryConfigManager, localMachineId));
 
-		// Register commands based on settings
-		this.settings.commands.forEach(command => {
-			if (command.enabled) {
-				this.addCommand({
-					id: command.id,
-					name: command.name,
-					editorCallback: (editor: Editor, view: MarkdownView) => {
-						switch (command.id) {
-							case 'add-external-embed-relative-to-home':
-								this.showFilePickerAndCreateEmbed(
-									editor,
-									this.context.homeDirectory,
-									this.createEmbedRelativeToHome.bind(this)
-								);
-								break;
-							case 'add-external-link-relative-to-home':
-								this.showFilePickerAndCreateEmbed(
-									editor,
-									this.context.homeDirectory,
-									this.createLinkRelativeToHome.bind(this)
-								);
-								break;
-							case 'add-external-inline-link-relative-to-home':
-								this.showFilePickerAndCreateEmbed(
-									editor,
-									this.context.homeDirectory,
-									this.createInlineLinkRelativeToHome.bind(this)
-								);
-								break;
-							case 'add-external-embed-relative-to-vault':
-								this.showFilePickerAndCreateEmbed(
-									editor,
-									this.context.vaultDirectory,
-									this.createEmbedRelativeToVault.bind(this)
-								);
-								break;
-							case 'add-external-link-relative-to-vault':
-								this.showFilePickerAndCreateEmbed(
-									editor,
-									this.context.vaultDirectory,
-									this.createLinkRelativeToVault.bind(this)
-								);
-								break;
-							case 'add-external-inline-link-relative-to-vault':
-								this.showFilePickerAndCreateEmbed(
-									editor,
-									this.context.vaultDirectory,
-									this.createInlineLinkRelativeToVault.bind(this)
-								);
-								break;
-							case 'add-external-embed':
-								this.handleAddExternalEmbed(editor);
-								break;
-							case 'add-external-inline-link':							
-								this.handleAddExternalInlineLink(editor);
-								break;
-						}
-					}
-				});
+		this.addCommand({
+			id: 'add-external-embed',
+			name: 'Add external embed',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				this.handleAddExternalEmbed(editor);
 			}
 		});
-
-		this.registerEvent(
-			this.app.workspace.on("active-leaf-change", () => {
-				// Clean up old event listeners
-				if (this.cleanupDropHandler) {
-					this.cleanupDropHandler();
-					this.cleanupDropHandler = null;
-				}
-
-				const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (activeView) {
-					const dropHandler = (event: DragEvent) => {
-						// console.log("drop", event);
-						if (this.settings.enableDragAndDrop) { // always enabled now
-							this.handleDragEvent(event, activeView.editor);
-						} else {
-							// console.log("drag and drop is disabled");
-						}
-					};
-
-					activeView.contentEl.addEventListener("drop", dropHandler, { capture: true });
-
-					// Save cleanup function
-					this.cleanupDropHandler = () => {
-						activeView.contentEl.removeEventListener("drop", dropHandler, { capture: true });
-					};
-				}
-			})
-		);
+		this.addCommand({
+			id: 'add-external-inline-link',
+			name: 'Add external inline link',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				this.handleAddExternalInlineLink(editor);
+			}
+		});
 
 
 		// keep LinkRelativeToHome and LinkRelativeToVault for backward compatibility
@@ -379,7 +214,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				result.filePaths.forEach((filePath: string) => {
 					console.log("filePath", filePath);
 					const relativePath = getRelativePath(selectedDirectoryPath, filePath);
-					//const embedCode = `\n\`\`\`EmbedRelativeTo\n${selectedDirectoryId}://${relativePath}\n\`\`\`\n`;
 					const embedCode = createCodeFn(selectedDirectoryId, relativePath);
 					this.insertText(editor, embedCode);
 				});
@@ -752,42 +586,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-
-
-
-	private async showFilePickerAndCreateEmbed(
-		editor: Editor,
-		baseDir: string,
-		createEmbedFn: (editor: Editor, relativePath: string) => void
-	) {
-		// @ts-ignore
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		const { remote } = require('electron');
-		// const ImageExtensionsWithoutDot = ImageExtensions.map(ext => ext.substring(1));
-		// const VideoExtensionsWithoutDot = VideoExtensions.map(ext => ext.substring(1));
-		// const AudioExtensionsWithoutDot = AudioExtensions.map(ext => ext.substring(1));
-
-		const result = await remote.dialog.showOpenDialog({
-			properties: ['openFile', 'multiSelections'],
-			filters: [
-				{ name: 'All Files', extensions: ['*'] },
-				// { name: 'Images', extensions: ImageExtensionsWithoutDot },
-				// { name: 'PDF', extensions: ['pdf'] },
-				// { name: 'Video', extensions: VideoExtensionsWithoutDot },
-				// { name: 'Audio', extensions: AudioExtensionsWithoutDot }
-			]
-		});
-
-		if (!result.canceled && result.filePaths.length > 0) {
-			const filePaths = result.filePaths;
-			console.log("Selected files:", filePaths);
-
-			filePaths.forEach((filePath: string) => {
-				const relativePath = getRelativePath(baseDir, filePath);
-				createEmbedFn(editor, relativePath);
-			});
-		}
 	}
 
 	private processEmbedRelativeTo(source: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
