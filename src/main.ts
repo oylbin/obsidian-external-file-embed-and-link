@@ -465,7 +465,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				});
 			} catch(error){
 				el.addEventListener("click", () => {
-					new Notice(`Inline link error: ${error}`);
+					new Notice(`Inline link error: ${error.message}`);
 				});
 			}
 		});

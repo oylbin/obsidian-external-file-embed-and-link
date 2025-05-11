@@ -53,7 +53,7 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 
 	private checkDeviceName(name: string) {
 		if (!/^[a-zA-Z0-9\s\-_.]+$/.test(name)) {
-			throw new Error("Invalid device name, only letters, numbers, spaces, dash, dot, and underscore are allowed");
+			throw new Error(`Invalid device name "${name}, only letters, numbers, spaces, dash, dot, and underscore are allowed`);
 		}
 	}
 
@@ -61,17 +61,17 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 		const lowerName = name.toLowerCase();
 		// home, vault, file are reserved
 		if (lowerName === 'home' || lowerName === 'vault' || lowerName === 'file') {
-			throw new Error("Invalid virtual directory name, home, vault, and file are reserved");
+			throw new Error(`Invalid virtual directory name "${name}", home, vault, and file are reserved`);
 		}
 		if (!/^[a-zA-Z0-9]+$/.test(name)) {
-			throw new Error("Invalid virtual directory name, only letters and numbers are allowed");
+			throw new Error(`Invalid virtual directory name "${name}", only letters and numbers are allowed`);
 		}
 	}
 
 	setDeviceName(uuid: string, name: string): Promise<void> {
 		// check if the device exists
 		if (!this.plugin.settings.devices[uuid]) {
-			throw new Error("Device not found");
+			throw new Error(`Device "${uuid}" not found`);
 		}
 		this.checkDeviceName(name);
 		this.plugin.settings.devices[uuid].name = name;
@@ -89,7 +89,7 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 
 	addDirectory(virtualDirectoryName: string): Promise<void> {
 		if (this.plugin.settings.virtualDirectories[virtualDirectoryName]) {
-			throw new Error("Directory already exists");
+			throw new Error(`Directory "${virtualDirectoryName}" already exists`);
 		}
 		this.checkVirtualDirectoryName(virtualDirectoryName);
 		this.plugin.settings.virtualDirectories[virtualDirectoryName] = {};
@@ -98,7 +98,7 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 
 	renameDirectory(virtualDirectoryName: string, newName: string): Promise<void> {
 		if (this.plugin.settings.virtualDirectories[newName]) {
-			throw new Error("Directory already exists");
+			throw new Error(`Directory "${newName}" already exists`);
 		}
 		this.checkVirtualDirectoryName(newName);
 		this.plugin.settings.virtualDirectories[newName] = this.plugin.settings.virtualDirectories[virtualDirectoryName];
@@ -137,7 +137,7 @@ export class VirtualDirectoryManagerImpl implements VirtualDirectoryManager {
 		if(uuid === this.deviceUUID){
 			// check if the directory exists
 			if (!existsSync(directory)) {
-				throw new Error(`Directory does not exist: ${directory}`);
+				throw new Error(`Directory "${directory}" does not exist`);
 			}
 		}
 		if (!this.plugin.settings.virtualDirectories[virtualDirectoryName]) {
