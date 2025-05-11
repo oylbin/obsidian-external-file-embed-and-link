@@ -182,8 +182,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.registerMarkdownPostProcessor((element, context) => {
 			this.processInlineLink(element, context);
 		});
-
-
 	}
 
 	private async selectFileAndCreateCode(editor: Editor, 
@@ -509,7 +507,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		// console.log("embedArguments", embedArguments);
 
 		// create a header element to show the filename
-		const header = document.createElement("h2");
+		const header = document.createElement("strong");
 		if (embedArguments === '') {
 			header.textContent = path.basename(fullPath);
 		} else {

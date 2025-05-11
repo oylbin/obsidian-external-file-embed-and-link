@@ -21,7 +21,7 @@ If your plugin does not need CSS, delete this file.
 /* Markdown Element Styles */
 .external-embed-markdown-element {
 	border: 1px solid gray;
-	padding: 10px;
+	padding: 1em;
 }
 
 /* Folder View Styles */
