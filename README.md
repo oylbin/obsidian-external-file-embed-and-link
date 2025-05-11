@@ -6,19 +6,36 @@ Embed and link local files outside your obsidian vault with relative paths for c
 
 1. Embed external files (Markdown, PDF, Images, Audio, Video) outside your obsidian vault.
 2. Create links to files outside your obsidian vault that open with system default applications.
-3. Reference files using paths relative to Home directory or Vault directory for cross-device and cross-platform compatibility.
+3. Reference files using virtual directories for cross-device and cross-platform compatibility.
 4. Provide commands to add embeds or links via file picker.
-5. Support drag & drop to create embeds or links.
+
+## Virtual Directory
+
+The plugin uses a flexible virtual directory system that allows you to:
+
+- Map any local directory to a virtual directory ID
+- Configure different paths per device for the same virtual directory ID
+- Access files using the format: `VirtualDirectoryId://relative/path/to/file`
+
+Home and vault directories are pre-defined as virtual directories:
+- `home://` - Points to your user home directory
+- `vault://` - Points to your Obsidian vault directory
+
+You can define additional virtual directories in the plugin settings. This allows you to:
+
+1. Use the same note across multiple devices, even when file paths differ
+2. Reference files outside your vault in a consistent way
+3. Maintain compatibility across different operating systems
 
 ## Detailed Usage
 
 ### Embedding External Files
 
-You can embed files using paths relative to your Home directory. For example, if your Home path is `C:\Users\username`, you can embed a PDF file from `C:\Users\username\SynologyDrive\work\Document.pdf` like this:
+You can embed files using paths relative to a virtual directory. For example, if your Home path is `C:\Users\username`, you can embed a PDF file from `C:\Users\username\SynologyDrive\work\Document.pdf` like this:
 
 ~~~markdown
-```EmbedRelativeToHome
-SynologyDrive/work/Document.pdf
+```EmbedRelativeTo
+home://SynologyDrive/work/Document.pdf
 ```
 ~~~
 
@@ -26,15 +43,15 @@ This will be rendered in Live Preview and Reading Mode as:
 
 ![PDF Example](docs/assets/pdf-example.png)
 
-If your Obsidian vault is located at `C:\Users\username\SynologyDrive\obsidian`, you can embed the same file using a path relative to your vault:
+You can also use a custom virtual directory. For example, if you've defined a virtual directory called "project" that points to different paths on different computers:
 
 ~~~markdown
-```EmbedRelativeToVault
-../work/Document.pdf
+```EmbedRelativeTo
+project://documents/report.pdf
 ```
 ~~~
 
-Using relative paths ensures compatibility across different computers and operating systems, especially useful when syncing files with services like SynologyDrive.
+Using virtual directories ensures compatibility across different computers and operating systems, especially useful when syncing files with services like SynologyDrive.
 
 ### Supported File Types for Embedding
 
@@ -55,8 +72,8 @@ Following Obsidian's [Embed files](https://help.obsidian.md/Linking+notes+and+fi
 Add header name after `#` to embed only the header section:
 
 ~~~markdown
-```EmbedRelativeToHome
-SynologyDrive/work/Document.md#This is a header
+```EmbedRelativeTo
+home://SynologyDrive/work/Document.md#This is a header
 ```
 ~~~
 
@@ -64,8 +81,8 @@ SynologyDrive/work/Document.md#This is a header
 Add parameters after `#` to control page number, width, and height:
 
 ~~~markdown
-```EmbedRelativeToHome
-SynologyDrive/work/Document.pdf#page=3&width=100%&height=80vh
+```EmbedRelativeTo
+home://SynologyDrive/work/Document.pdf#page=3&width=100%&height=80vh
 ```
 ~~~
 
@@ -73,49 +90,34 @@ SynologyDrive/work/Document.pdf#page=3&width=100%&height=80vh
 Add dimensions after `|` to control size:
 
 ~~~markdown
-```EmbedRelativeToHome
-Downloads/test.png|400
+```EmbedRelativeTo
+home://Downloads/test.png|400
 ```
 ~~~
 
 ~~~markdown
-```EmbedRelativeToHome
-Videos/test.mp4|800x600
+```EmbedRelativeTo
+home://Videos/test.mp4|800x600
 ```
 ~~~
 
 #### Folders
 
-You can embed a folder, and it will list all the files in the folder.
+You can embed a folder by put  '/#' after the folder name , and it will list all the files in the folder.
 You can also add parameters after `#` to filter the files to embed.
 
-
 ~~~markdown
-```EmbedRelativeToHome
-Downloads/#extensions=pdf,mp4
+```EmbedRelativeTo
+home://Downloads/#extensions=pdf,mp4
 ```
 ~~~
-
 
 ### External File Links
 
-If you don't need to render the file content in Reading Mode, you can create links to external files:
+If you don't need to render the file content in Reading Mode, you can create inline links within paragraphs to external files:
 
 ~~~markdown
-This is a pdf file outside of the vault:
-```LinkRelativeToHome
-Downloads/sample.pdf
-```
-~~~
-
-This will be rendered as:
-
-![External Link Example](docs/assets/external-link-example.png)
-
-For inline links within paragraphs, use:
-
-~~~markdown
-This is a <a class=LinkRelativeToHome>Downloads/sample.pdf</a> outside of the vault.
+This is a <a href="#home://Downloads/sample.pdf" class="LinkRelativeTo">sample.pdf</a> outside of the vault.
 ~~~
 
 Which renders as:
@@ -127,15 +129,12 @@ Which renders as:
 #### Using Commands
 Type "external" in the command palette to see available options:
 
+- `Add external embed`: Opens a dialog to select a virtual directory and file for embedding
+- `Add external inline link`: Opens a dialog to select a virtual directory and file for linking
+
+Both commands will automatically generate the appropriate code with the correct syntax.
+
 ![commands](docs/assets/commands.png)
-
-#### Using Drag & Drop
-Create embeds or links by holding modifier keys (`ctrl`, `shift`, `ctrl+shift`) while dragging files. 
-
-Modifier keys can be customized in the plugin settings:
-
-![settings](docs/assets/settings.png)
-
 
 ## Acknowledgement and License Notice
 
