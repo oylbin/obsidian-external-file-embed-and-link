@@ -9,7 +9,7 @@ Embed and link local files outside your obsidian vault with relative paths for c
 3. Reference files using virtual directories for cross-device and cross-platform compatibility.
 4. Provide commands to add embeds or links via file picker.
 
-## Virtual Directory
+## Virtual Directories
 
 The plugin uses a flexible virtual directory system that allows you to:
 
