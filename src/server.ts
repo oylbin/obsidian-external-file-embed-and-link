@@ -8,6 +8,7 @@ import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
 import pdf_min_js from 'inline:./assets/pdf.js';
 import pdf_worker_min_js from 'inline:./assets/pdf.worker.js';
 import { VirtualDirectoryManager } from './VirtualDirectoryManager';
+import pdfTemplate from 'inline:./templates/pdf.html';
 
 const PDF_HTML_TEMPLATE = `
 <!DOCTYPE html>
@@ -156,7 +157,7 @@ export class CrossComputerLinkContext {
 export function getTemplate(extname: string) {
 	extname = extname.toLowerCase();
 	const _map: { [key: string]: string } = {
-		'.pdf': PDF_HTML_TEMPLATE,
+		'.pdf': pdfTemplate,
 	};
 	if (_map[extname]) {
 		return _map[extname];
