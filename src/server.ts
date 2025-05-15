@@ -71,11 +71,8 @@ function getFilePathFromUrl(url: string, context: CrossComputerLinkContext) {
 	// /open/{directoryId}?p={encodedFilePath}
 	// /embed/{directoryId}?p={encodedFilePath}
 
-	// console.log("getFilePathFromUrl", url);
 	const [urlWithoutParams, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
-	// console.log("urlWithoutParams", urlWithoutParams);
-	// console.log("parsedParams", parsedParams);
 
 	const directoryId = urlWithoutParams.split('/')[2];
 	const decodedPath = decodeURIComponent(parsedParams.p);
@@ -96,8 +93,16 @@ export async function embedRequestHandler(url: string, req: http.IncomingMessage
 	const extname = path.extname(parsedParams.p).toLowerCase();
 	const template = await getTemplate(extname);
 	if (template) {
+		// we are handling a embed request, the url is in the following format:
+		// 		   url :	/embed/home?p=relative/path/to/some.pdf&page=3
+		// we are going to response with a html page, the page will embed a iframe, 
+		// the iframe will load the pdf file from the downloadUrl
+		// downloadUrl :	/download/home?p=relative/path/to/some.pdf&page=3
 		const downloadUrl = url.replace("/embed/", "/download/");
-		let multiLineStr = template.replace("URL_TO_REPLACE", downloadUrl).replace("FILENAME_TO_REPLACE", path.basename(url));
+		// encode downloadUrl if it is passed as a url parameter
+		// const encodedDownloadUrl = encodeURIComponent(downloadUrl);
+		const encodedDownloadUrl = downloadUrl;
+		let multiLineStr = template.replace("URL_TO_REPLACE", encodedDownloadUrl).replace("FILENAME_TO_REPLACE", path.basename(url));
 		if(extname === '.pdf'){
 			// TODO Currently only pdf embed is supported, and only pdf has parameters. If there are more embed types in the future, better organization of code is needed.
 			// Here params should be in the form of page=123
@@ -178,7 +183,6 @@ export function downloadRequestHandler(url: string, req: http.IncomingMessage, r
 }
 function openRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	const filePath = getFilePathFromUrl(url, context);
-	// console.log("filePath", filePath);
 	openFileWithDefaultProgram(filePath, (error: Error) => {
 		if(error){
 			console.error("Failed to open file:", error);
