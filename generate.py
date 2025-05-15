@@ -1,13 +1,5 @@
-# iterate list.txt and print each line
-
-codeLines = """
-if(url === "{url}") {{
-	res.setHeader('Content-Type', '{contentType}');
-	const content = await import('inline:.{url}');
-	res.end(content.default);
-    return;
-}}
-"""
+import os
+import jinja2
 
 contentTypeDict = {
     "bcmap": "application/octet-stream",
@@ -31,9 +23,25 @@ contentTypeDict = {
 }
 
 
-with open('list.txt', 'r') as file:
-    for line in file:
-        url = line.strip()[3:]
+urls = []
+# iterate all files recursively in src/assets/pdfjs-5.2.133-dist/
+for root, dirs, files in os.walk('src/assets/pdfjs-5.2.133-dist/'):
+    for file in files:
+        url = os.path.join(root, file)
+        # change sep to /
+        url = url.replace('\\', '/')
         ext = url.split('.')[-1]
-        contentType = contentTypeDict[ext]
-        print(codeLines.format(url=url, contentType=contentType))
+        if ext in ['map', 'pdf']:
+            continue
+        filename = os.path.basename(url)
+        if 'LICENSE' in filename:
+            continue
+        contentType = contentTypeDict.get(ext, "application/octet-stream")
+        fileSize = os.path.getsize(url)
+        print(f"{fileSize:,} bytes, {url}, {contentType}")
+        # remove first 3 characters
+        urls.append((url[3:], contentType))
+
+# write urls to src/InlineAssetHandler.ts
+with open('src/InlineAssetHandler.ts', 'w') as file:
+    file.write(jinja2.Template(open('src/templates/InlineAssetHandler.ts.jinja2').read()).render(urls=urls))

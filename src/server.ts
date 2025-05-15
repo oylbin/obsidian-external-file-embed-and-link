@@ -96,7 +96,6 @@ export async function embedRequestHandler(url: string, req: http.IncomingMessage
 	// url may contain ? followed by parameters, split url and parameters
 	const [, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
-	console.log("parsedParams", parsedParams);
 	const extname = path.extname(parsedParams.p).toLowerCase();
 	const template = await getTemplate(extname);
 	if (template) {
@@ -206,7 +205,6 @@ function openRequestHandler(url: string, req: http.IncomingMessage, res: http.Se
 	res.end(multiLineStr);
 }
 async function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
-	console.log("assetRequestHandler", url);
 	if(url === "/assets/pdf_viewer.min.css") {
 		res.setHeader('Content-Type', 'text/css');
 		res.end(pdf_viewer_min_css);
@@ -230,13 +228,11 @@ function errorResponse(res: http.ServerResponse, code: number, message: string) 
 	res.end(message);
 }
 export async function httpRequestHandler(req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
-	// console.log("httpRequestHandler", req.url);
 	// Read file content and return it via http response
 	const url = req.url;
 	if(!url) {
 		return errorResponse(res, 404, "Invalid path");
 	}
-	// console.log("url", url);
 	try{
 		if(url.startsWith("/embed/")) {
 			await embedRequestHandler(url, req, res, context);
@@ -248,7 +244,6 @@ export async function httpRequestHandler(req: http.IncomingMessage, res: http.Se
 			openRequestHandler(url, req, res, context);
 			return;
 		}else if(url.startsWith("/assets/")) {
-			console.log("assets", url);
 			await assetRequestHandler(url, req, res, context);
 			return;
 		}
