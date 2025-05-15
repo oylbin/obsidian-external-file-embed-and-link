@@ -31,7 +31,7 @@ for root, dirs, files in os.walk('src/assets/pdfjs-5.2.133-dist/'):
         # change sep to /
         url = url.replace('\\', '/')
         ext = url.split('.')[-1]
-        if ext in ['map', 'pdf']:
+        if ext in ['map', 'pdf', 'bcmap', 'ftl']:
             continue
         filename = os.path.basename(url)
         if 'LICENSE' in filename:
