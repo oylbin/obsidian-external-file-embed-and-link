@@ -23,24 +23,65 @@ contentTypeDict = {
 }
 
 
-urls = []
-# iterate all files recursively in src/assets/pdfjs-5.2.133-dist/
-for root, dirs, files in os.walk('src/assets/pdfjs-5.2.133-dist/'):
-    for file in files:
-        url = os.path.join(root, file)
-        # change sep to /
-        url = url.replace('\\', '/')
-        ext = url.split('.')[-1]
-        if ext in ['map', 'pdf', 'bcmap', 'ftl']:
+def get_urls():
+    urls = []
+    # iterate all files recursively in src/assets/pdfjs-5.2.133-dist/
+    for root, dirs, files in os.walk('src/assets/pdfjs-5.2.133-dist/'):
+        for file in files:
+            url = os.path.join(root, file)
+            # change sep to /
+            url = url.replace('\\', '/')
+            ext = url.split('.')[-1]
+            if ext in ['map', 'pdf', 'bcmap', 'ftl']:
+                continue
+            filename = os.path.basename(url)
+            if 'LICENSE' in filename:
+                continue
+            contentType = contentTypeDict.get(ext, "application/octet-stream")
+            fileSize = os.path.getsize(url)
+            print(f"{fileSize:,} bytes, {url}, {contentType}")
+            # remove first 3 characters
+            urls.append((url[3:], contentType))
+    return urls
+
+
+def get_urls2():
+    urls = []
+    filenames = """
+/assets/pdfjs-5.2.133-dist/build/pdf.mjs
+/assets/pdfjs-5.2.133-dist/build/pdf.worker.mjs
+/assets/pdfjs-5.2.133-dist/web/viewer.css
+/assets/pdfjs-5.2.133-dist/web/viewer.mjs
+/assets/pdfjs-5.2.133-dist/web/images/annotation-noicon.svg
+/assets/pdfjs-5.2.133-dist/web/images/findbarButton-next.svg
+/assets/pdfjs-5.2.133-dist/web/images/findbarButton-previous.svg
+/assets/pdfjs-5.2.133-dist/web/images/loading.svg
+/assets/pdfjs-5.2.133-dist/web/images/loading-icon.gif
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-currentOutlineItem.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-menuArrow.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-pageDown.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-pageUp.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-search.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-sidebarToggle.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-viewAttachments.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-viewLayers.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-viewOutline.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-viewThumbnail.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-zoomIn.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-zoomOut.svg
+/assets/pdfjs-5.2.133-dist/web/images/treeitem-collapsed.svg
+/assets/pdfjs-5.2.133-dist/web/images/treeitem-expanded.svg
+"""
+    for filename in filenames.split('\n'):
+        if filename.strip() == '':
             continue
-        filename = os.path.basename(url)
-        if 'LICENSE' in filename:
-            continue
+        ext = filename.split('.')[-1]
         contentType = contentTypeDict.get(ext, "application/octet-stream")
-        fileSize = os.path.getsize(url)
-        print(f"{fileSize:,} bytes, {url}, {contentType}")
-        # remove first 3 characters
-        urls.append((url[3:], contentType))
+        urls.append((filename, contentType))
+    return urls
+
+
+urls = get_urls2()
 
 # write urls to src/InlineAssetHandler.ts
 with open('src/InlineAssetHandler.ts', 'w') as file:

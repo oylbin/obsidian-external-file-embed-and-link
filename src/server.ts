@@ -4,9 +4,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getContentType, openFileWithDefaultProgram, parseUrlParams } from './utils';
 
-import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
-import pdf_min_js from 'inline:./assets/pdf.js';
-import pdf_worker_min_js from 'inline:./assets/pdf.worker.js';
 import { VirtualDirectoryManager } from './VirtualDirectoryManager';
 import { InlineAssetHandler } from './InlineAssetHandler';
 
@@ -205,18 +202,13 @@ function openRequestHandler(url: string, req: http.IncomingMessage, res: http.Se
 	res.end(multiLineStr);
 }
 async function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
-	if(url === "/assets/pdf_viewer.min.css") {
-		res.setHeader('Content-Type', 'text/css');
-		res.end(pdf_viewer_min_css);
-	}else if(url === "/assets/pdf.min.js") {
-		res.setHeader('Content-Type', 'application/javascript');
-		res.end(pdf_min_js);
-	}else if(url === "/assets/pdf.worker.min.js") {	
-		res.setHeader('Content-Type', 'application/javascript');
-		res.end(pdf_worker_min_js);
-	}else if(url.startsWith("/assets/pdfjs-5.2.133-dist/web/viewer.html")) {
+	if(url.startsWith("/assets/pdfjs-5.2.133-dist/web/viewer.html")) {
 		res.setHeader('Content-Type', 'text/html');
 		const content = await import('inline:./assets/pdfjs-5.2.133-dist/web/viewer.html');
+		res.end(content.default);
+	}else if(url==="/assets/pdfjs-viewer-element-2.7.1.js") {
+		res.setHeader('Content-Type', 'application/javascript');
+		const content = await import('inline:./assets/pdfjs-viewer-element-2.7.1.js');
 		res.end(content.default);
 	}else{
 		await InlineAssetHandler(url, req, res);

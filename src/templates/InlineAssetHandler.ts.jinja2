@@ -1,7 +1,7 @@
 import * as http from 'http';
 
 export async function InlineAssetHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse) {
-	console.log("InlineAssetHandler", url);
+	// console.log("InlineAssetHandler", url);
 	
 {% for url, contentType in urls %}
 	if(url === "{{ url }}") {
