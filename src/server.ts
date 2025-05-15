@@ -8,6 +8,7 @@ import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
 import pdf_min_js from 'inline:./assets/pdf.js';
 import pdf_worker_min_js from 'inline:./assets/pdf.worker.js';
 import { VirtualDirectoryManager } from './VirtualDirectoryManager';
+import { InlineAssetHandler } from './InlineAssetHandler';
 
 const UNSUPPORTED_FILE_TEMPLATE = `
 <html>
@@ -30,7 +31,7 @@ export async function getTemplate(extname: string) {
 	extname = extname.toLowerCase();
 	const _map: { [key: string]: () => Promise<string> } = {
 		'.pdf': async () => {
-			const template = await import('inline:./templates/pdf1.html');
+			const template = await import('inline:./templates/pdf.html');
 			return template.default;
 		},
 	};
@@ -95,6 +96,7 @@ export async function embedRequestHandler(url: string, req: http.IncomingMessage
 	// url may contain ? followed by parameters, split url and parameters
 	const [, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
+	console.log("parsedParams", parsedParams);
 	const extname = path.extname(parsedParams.p).toLowerCase();
 	const template = await getTemplate(extname);
 	if (template) {
@@ -203,7 +205,8 @@ function openRequestHandler(url: string, req: http.IncomingMessage, res: http.Se
 		`;
 	res.end(multiLineStr);
 }
-function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
+async function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
+	console.log("assetRequestHandler", url);
 	if(url === "/assets/pdf_viewer.min.css") {
 		res.setHeader('Content-Type', 'text/css');
 		res.end(pdf_viewer_min_css);
@@ -213,9 +216,12 @@ function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.S
 	}else if(url === "/assets/pdf.worker.min.js") {	
 		res.setHeader('Content-Type', 'application/javascript');
 		res.end(pdf_worker_min_js);
+	}else if(url.startsWith("/assets/pdfjs-5.2.133-dist/web/viewer.html")) {
+		res.setHeader('Content-Type', 'text/html');
+		const content = await import('inline:./assets/pdfjs-5.2.133-dist/web/viewer.html');
+		res.end(content.default);
 	}else{
-		res.writeHead(404);
-		res.end(`Invalid path ${url}`);
+		await InlineAssetHandler(url, req, res);
 	}
 }
 
@@ -230,6 +236,7 @@ export async function httpRequestHandler(req: http.IncomingMessage, res: http.Se
 	if(!url) {
 		return errorResponse(res, 404, "Invalid path");
 	}
+	// console.log("url", url);
 	try{
 		if(url.startsWith("/embed/")) {
 			await embedRequestHandler(url, req, res, context);
@@ -241,7 +248,8 @@ export async function httpRequestHandler(req: http.IncomingMessage, res: http.Se
 			openRequestHandler(url, req, res, context);
 			return;
 		}else if(url.startsWith("/assets/")) {
-			assetRequestHandler(url, req, res, context);
+			console.log("assets", url);
+			await assetRequestHandler(url, req, res, context);
 			return;
 		}
 	}catch(error){
