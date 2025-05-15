@@ -1,124 +1,28 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>PDF Viewer</title>
-    <link rel="stylesheet" href="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf_viewer.min.css">
-    <script src="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.min.js"></script>
-    <style>
-        #toolbar {
-            background-color: #474747;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        #toolbar button {
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        #pageNumber {
-            width: 50px;
-        }
-        #viewerContainer {
-            overflow: auto;
-            position: absolute;
-            width: 100%;
-            top: 50px;
-            bottom: 0;
-        }
-        #viewer {
-            position: relative;
-            margin: 0 auto;
-        }
-        #viewer canvas {
-            margin: 10px auto;
-            display: block;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>HTML + pdfjs-viewer-element (PDF.js default viewer)</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    pdfjs-viewer-element {
+      height: 100vh;
+      height: 100dvh;
+    }
+  </style>
 </head>
+
 <body>
-    <div id="toolbar">
-        <button id="prev">Previous</button>
-        <button id="next">Next</button>
-        <span>Page: <input type="number" id="pageNumber" value="1"> / <span id="pageCount">0</span></span>
-        <button id="zoomOut">-</button>
-        <button id="zoomIn">+</button>
-    </div>
-    <div id="viewerContainer">
-        <div id="viewer"></div>
-    </div>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.worker.min.js';
-        
-        let pdfDoc = null;
-        let pageNum = PAGE_TO_REPLACE;
-        let scale = 1.5;
-        const viewer = document.getElementById('viewer');
-        const pageNumberInput = document.getElementById('pageNumber');
-        const pageCount = document.getElementById('pageCount');
+  <pdfjs-viewer-element src="URL_TO_REPLACE" viewer-path="/pdfjs-4.0.379-dist" locale="en" page="PAGE_TO_REPLACE"
+    search="Mauris">
+  </pdfjs-viewer-element>
 
-        async function loadPDF(url) {
-            try {
-                pdfDoc = await pdfjsLib.getDocument(url).promise;
-                pageCount.textContent = pdfDoc.numPages;
-                renderPage(pageNum);
-            } catch (error) {
-                console.error('Error loading PDF:', error);
-            }
-        }
-
-        async function renderPage(num) {
-            const page = await pdfDoc.getPage(num);
-            const viewport = page.getViewport({ scale });
-            
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-
-            viewer.innerHTML = '';
-            viewer.appendChild(canvas);
-            
-            await page.render(renderContext).promise;
-            pageNumberInput.value = num;
-        }
-
-        document.getElementById('prev').addEventListener('click', () => {
-            if (pageNum <= 1) return;
-            pageNum--;
-            renderPage(pageNum);
-        });
-
-        document.getElementById('next').addEventListener('click', () => {
-            if (pageNum >= pdfDoc.numPages) return;
-            pageNum++;
-            renderPage(pageNum);
-        });
-
-        document.getElementById('zoomIn').addEventListener('click', () => {
-            scale *= 1.2;
-            renderPage(pageNum);
-        });
-
-        document.getElementById('zoomOut').addEventListener('click', () => {
-            scale *= 0.8;
-            renderPage(pageNum);
-        });
-
-        pageNumberInput.addEventListener('change', () => {
-            const n = parseInt(pageNumberInput.value);
-            if (n > 0 && n <= pdfDoc.numPages) {
-                pageNum = n;
-                renderPage(pageNum);
-            }
-        });
-
-        loadPDF('URL_TO_REPLACE');
-    </script>
+  <script type="module" src="https://cdn.skypack.dev/pdfjs-viewer-element"></script>
 </body>
+
 </html>
