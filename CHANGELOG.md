@@ -2,6 +2,12 @@
 
 All notable changes to the External File Embed and Link plugin will be documented in this file.
 
+## [1.5.1]
+
+### Added
+
+- Make text in pdf embed copyable and searchable
+
 ## [1.5.0]
 
 ### Added
