@@ -1,0 +1,17 @@
+import * as http from 'http';
+
+export async function InlineAssetHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse) {
+	// console.log("InlineAssetHandler", url);
+	
+{% for url, contentType in urls %}
+	if(url === "{{ url }}") {
+		res.setHeader('Content-Type', '{{ contentType }}');
+		const content = await import('inline:.{{ url }}');
+		res.end(content.default);
+		return;
+	}
+{% endfor %}
+	res.writeHead(404);
+	res.end(`Invalid path ${url}`);
+	console.log("Invalid path", url);
+}

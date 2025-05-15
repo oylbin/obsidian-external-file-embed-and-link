@@ -4,137 +4,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getContentType, openFileWithDefaultProgram, parseUrlParams } from './utils';
 
-import pdf_viewer_min_css from 'inline:./assets/pdf_viewer.css';
-import pdf_min_js from 'inline:./assets/pdf.js';
-import pdf_worker_min_js from 'inline:./assets/pdf.worker.js';
 import { VirtualDirectoryManager } from './VirtualDirectoryManager';
-
-const PDF_HTML_TEMPLATE = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>PDF Viewer</title>
-    <link rel="stylesheet" href="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf_viewer.min.css">
-    <script src="http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.min.js"></script>
-    <style>
-        #toolbar {
-            background-color: #474747;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        #toolbar button {
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        #pageNumber {
-            width: 50px;
-        }
-        #viewerContainer {
-            overflow: auto;
-            position: absolute;
-            width: 100%;
-            top: 50px;
-            bottom: 0;
-        }
-        #viewer {
-            position: relative;
-            margin: 0 auto;
-        }
-        #viewer canvas {
-            margin: 10px auto;
-            display: block;
-        }
-    </style>
-</head>
-<body>
-    <div id="toolbar">
-        <button id="prev">Previous</button>
-        <button id="next">Next</button>
-        <span>Page: <input type="number" id="pageNumber" value="1"> / <span id="pageCount">0</span></span>
-        <button id="zoomOut">-</button>
-        <button id="zoomIn">+</button>
-    </div>
-    <div id="viewerContainer">
-        <div id="viewer"></div>
-    </div>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'http://127.0.0.1:PORT_TO_REPLACE/assets/pdf.worker.min.js';
-        
-        let pdfDoc = null;
-        let pageNum = PAGE_TO_REPLACE;
-        let scale = 1.5;
-        const viewer = document.getElementById('viewer');
-        const pageNumberInput = document.getElementById('pageNumber');
-        const pageCount = document.getElementById('pageCount');
-
-        async function loadPDF(url) {
-            try {
-                pdfDoc = await pdfjsLib.getDocument(url).promise;
-                pageCount.textContent = pdfDoc.numPages;
-                renderPage(pageNum);
-            } catch (error) {
-                console.error('Error loading PDF:', error);
-            }
-        }
-
-        async function renderPage(num) {
-            const page = await pdfDoc.getPage(num);
-            const viewport = page.getViewport({ scale });
-            
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-
-            viewer.innerHTML = '';
-            viewer.appendChild(canvas);
-            
-            await page.render(renderContext).promise;
-            pageNumberInput.value = num;
-        }
-
-        document.getElementById('prev').addEventListener('click', () => {
-            if (pageNum <= 1) return;
-            pageNum--;
-            renderPage(pageNum);
-        });
-
-        document.getElementById('next').addEventListener('click', () => {
-            if (pageNum >= pdfDoc.numPages) return;
-            pageNum++;
-            renderPage(pageNum);
-        });
-
-        document.getElementById('zoomIn').addEventListener('click', () => {
-            scale *= 1.2;
-            renderPage(pageNum);
-        });
-
-        document.getElementById('zoomOut').addEventListener('click', () => {
-            scale *= 0.8;
-            renderPage(pageNum);
-        });
-
-        pageNumberInput.addEventListener('change', () => {
-            const n = parseInt(pageNumberInput.value);
-            if (n > 0 && n <= pdfDoc.numPages) {
-                pageNum = n;
-                renderPage(pageNum);
-            }
-        });
-
-        loadPDF('URL_TO_REPLACE');
-    </script>
-</body>
-</html>`
-
+import { InlineAssetHandler } from './InlineAssetHandler';
 
 const UNSUPPORTED_FILE_TEMPLATE = `
 <html>
@@ -153,17 +24,19 @@ export class CrossComputerLinkContext {
 	directoryConfigManager: VirtualDirectoryManager;
 }
 
-export function getTemplate(extname: string) {
+export async function getTemplate(extname: string) {
 	extname = extname.toLowerCase();
-	const _map: { [key: string]: string } = {
-		'.pdf': PDF_HTML_TEMPLATE,
+	const _map: { [key: string]: () => Promise<string> } = {
+		'.pdf': async () => {
+			const template = await import('inline:./templates/pdf.html');
+			return template.default;
+		},
 	};
 	if (_map[extname]) {
-		return _map[extname];
+		return await _map[extname]();
 	}
 	return null;
 }
-
 
 export function findAvailablePort(startPort: number): Promise<number> {
 	return new Promise((resolve, reject) => {
@@ -191,8 +64,6 @@ export function findAvailablePort(startPort: number): Promise<number> {
 	});
 }
 
-
-
 function getFilePathFromUrl(url: string, context: CrossComputerLinkContext) {
 
 	// url should be in the following format:
@@ -200,11 +71,8 @@ function getFilePathFromUrl(url: string, context: CrossComputerLinkContext) {
 	// /open/{directoryId}?p={encodedFilePath}
 	// /embed/{directoryId}?p={encodedFilePath}
 
-	// console.log("getFilePathFromUrl", url);
 	const [urlWithoutParams, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
-	// console.log("urlWithoutParams", urlWithoutParams);
-	// console.log("parsedParams", parsedParams);
 
 	const directoryId = urlWithoutParams.split('/')[2];
 	const decodedPath = decodeURIComponent(parsedParams.p);
@@ -217,16 +85,24 @@ function getFilePathFromUrl(url: string, context: CrossComputerLinkContext) {
 	const filePath = path.join(directoryPath, decodedPath);
 	return filePath;
 }
-export function embedRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
+export async function embedRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	res.setHeader('Content-Type', 'text/html; charset=utf-8');
 	// url may contain ? followed by parameters, split url and parameters
 	const [, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
 	const extname = path.extname(parsedParams.p).toLowerCase();
-	const template = getTemplate(extname);
+	const template = await getTemplate(extname);
 	if (template) {
+		// we are handling a embed request, the url is in the following format:
+		// 		   url :	/embed/home?p=relative/path/to/some.pdf&page=3
+		// we are going to response with a html page, the page will embed a iframe, 
+		// the iframe will load the pdf file from the downloadUrl
+		// downloadUrl :	/download/home?p=relative/path/to/some.pdf&page=3
 		const downloadUrl = url.replace("/embed/", "/download/");
-		let multiLineStr = template.replace("URL_TO_REPLACE", downloadUrl).replace("FILENAME_TO_REPLACE", path.basename(url));
+		// encode downloadUrl if it is passed as a url parameter
+		// const encodedDownloadUrl = encodeURIComponent(downloadUrl);
+		const encodedDownloadUrl = downloadUrl;
+		let multiLineStr = template.replace("URL_TO_REPLACE", encodedDownloadUrl).replace("FILENAME_TO_REPLACE", path.basename(url));
 		if(extname === '.pdf'){
 			// TODO Currently only pdf embed is supported, and only pdf has parameters. If there are more embed types in the future, better organization of code is needed.
 			// Here params should be in the form of page=123
@@ -307,7 +183,6 @@ export function downloadRequestHandler(url: string, req: http.IncomingMessage, r
 }
 function openRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	const filePath = getFilePathFromUrl(url, context);
-	// console.log("filePath", filePath);
 	openFileWithDefaultProgram(filePath, (error: Error) => {
 		if(error){
 			console.error("Failed to open file:", error);
@@ -330,19 +205,17 @@ function openRequestHandler(url: string, req: http.IncomingMessage, res: http.Se
 		`;
 	res.end(multiLineStr);
 }
-function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
-	if(url === "/assets/pdf_viewer.min.css") {
-		res.setHeader('Content-Type', 'text/css');
-		res.end(pdf_viewer_min_css);
-	}else if(url === "/assets/pdf.min.js") {
+async function assetRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
+	if(url.startsWith("/assets/pdfjs-5.2.133-dist/web/viewer.html")) {
+		res.setHeader('Content-Type', 'text/html');
+		const content = await import('inline:./assets/pdfjs-5.2.133-dist/web/viewer.html');
+		res.end(content.default);
+	}else if(url==="/assets/pdfjs-viewer-element-2.7.1.js") {
 		res.setHeader('Content-Type', 'application/javascript');
-		res.end(pdf_min_js);
-	}else if(url === "/assets/pdf.worker.min.js") {	
-		res.setHeader('Content-Type', 'application/javascript');
-		res.end(pdf_worker_min_js);
+		const content = await import('inline:./assets/pdfjs-viewer-element-2.7.1.js');
+		res.end(content.default);
 	}else{
-		res.writeHead(404);
-		res.end(`Invalid path ${url}`);
+		await InlineAssetHandler(url, req, res);
 	}
 }
 
@@ -350,8 +223,7 @@ function errorResponse(res: http.ServerResponse, code: number, message: string) 
 	res.writeHead(code);
 	res.end(message);
 }
-export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
-	// console.log("httpRequestHandler", req.url);
+export async function httpRequestHandler(req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	// Read file content and return it via http response
 	const url = req.url;
 	if(!url) {
@@ -359,7 +231,7 @@ export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerRe
 	}
 	try{
 		if(url.startsWith("/embed/")) {
-			embedRequestHandler(url, req, res, context);
+			await embedRequestHandler(url, req, res, context);
 			return;
 		}else if(url.startsWith("/download/")) {
 			downloadRequestHandler(url, req, res, context);
@@ -368,7 +240,7 @@ export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerRe
 			openRequestHandler(url, req, res, context);
 			return;
 		}else if(url.startsWith("/assets/")) {
-			assetRequestHandler(url, req, res, context);
+			await assetRequestHandler(url, req, res, context);
 			return;
 		}
 	}catch(error){
@@ -377,6 +249,5 @@ export function httpRequestHandler(req: http.IncomingMessage, res: http.ServerRe
 	}
 
 	return errorResponse(res, 404, `Invalid path ${url}`);
-
 }
 
