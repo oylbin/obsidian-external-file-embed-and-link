@@ -47,7 +47,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.context.directoryConfigManager = new VirtualDirectoryManagerImpl(this, localMachineId);
 		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.context.directoryConfigManager, localMachineId));
 
-		this.embedProcessor = new EmbedProcessor(this.context.port);
+		this.embedProcessor = new EmbedProcessor(this.context.port, this.context.directoryConfigManager);
 		this.linkProcessor = new LinkProcessor(
 			this.context.homeDirectory,
 			this.context.vaultDirectory,

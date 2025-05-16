@@ -18,16 +18,93 @@ If your plugin does not need CSS, delete this file.
 	height: var(--iframe-height);
 }
 
+/* Embedded Image Styles */
+.external-embed-image {
+	cursor: pointer;
+}
+
+/* Open File Button Styles */
+.external-embed-video-container {
+	position: relative;
+	display: inline-block;
+}
+
+.external-embed-open-button {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	padding: 2px 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 3px;
+	background-color: rgba(255, 255, 255, 0.8);
+	cursor: pointer;
+	font-size: 12px;
+	z-index: 1;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+.external-embed-video-container:hover .external-embed-open-button {
+	opacity: 1;
+}
+
+.external-embed-open-button:hover {
+	background-color: rgba(255, 255, 255, 1);
+}
+
+/* Audio Open Button Styles */
+.external-embed-audio-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.external-embed-audio-open-button {
+	padding: 2px 6px;
+	margin-right: 32px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 3px;
+	background-color: rgba(255, 255, 255, 0.8);
+	cursor: pointer;
+	font-size: 12px;
+	flex-shrink: 0;
+}
+
+.external-embed-audio-open-button:hover {
+	background-color: rgba(255, 255, 255, 1);
+}
+
 /* Markdown Element Styles */
 .external-embed-markdown-element {
-	border: 1px solid gray;
+	border: 1px dashed var(--background-modifier-border);
 	padding: 1em;
+}
+
+.external-embed-markdown-header {
+	text-decoration: none;
+	color: var(--text-normal);
+	font-weight: bold;
+	display: block;
+	margin-bottom: 8px;
+	cursor: pointer;
+}
+
+.external-embed-markdown-header:hover {
+	text-decoration: underline;
 }
 
 /* Folder View Styles */
 .external-embed-folder-header {
 	font-weight: bold;
 	margin-bottom: 8px;
+	text-decoration: none;
+	color: var(--text-normal);
+	cursor: pointer;
+	display: inline-block;
+}
+
+.external-embed-folder-header:hover {
+	text-decoration: underline;
 }
 
 .external-embed-folder-list {

@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { openFileWithDefaultProgram } from './utils';
 import { Notice } from 'obsidian';
 import { extractHeaderSection } from './utils';
+import { VirtualDirectoryManager } from "VirtualDirectoryManager";
 
 export class EmbedData {
 	embedType: 'pdf' | 'image' | 'markdown' | 'audio' | 'video' | 'other' | 'folder';
@@ -225,7 +226,10 @@ export function parseEmbedData(inputLine: string): EmbedData {
 }
 
 export class EmbedProcessor {
-	constructor(private port: number) {}
+	constructor(
+		private port: number,
+		private directoryConfigManager: VirtualDirectoryManager
+	) {}
 
 	private embedPdfWithIframe(embedUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		const iframe = document.createElement("iframe");
@@ -248,10 +252,11 @@ export class EmbedProcessor {
 		element.appendChild(iframe);
 	}
 
-	private embedImage(fileUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+	private embedImage(fileUrl: string, filePath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		const embedArgumentWidthHeight = parseEmbedArgumentWidthHeight(embedArguments);
-		const img = document.createElement("img");
 
+		// Create and configure image
+		const img = document.createElement("img");
 		if (embedArgumentWidthHeight.width) {
 			img.width = embedArgumentWidthHeight.width;
 		}
@@ -259,11 +264,29 @@ export class EmbedProcessor {
 			img.height = embedArgumentWidthHeight.height;
 		}
 		img.src = fileUrl;
+		img.classList.add("external-embed-image");
+		img.title = "Click to open image with system default program";
+
+		// Add click handler to open URL
+		img.addEventListener("click", () => {
+			openFileWithDefaultProgram(filePath, (error) => {
+				if (error) {
+					new Notice("Failed to open file: " + error.message);
+				}
+			});
+		});
+
 		element.appendChild(img);
 	}
 
-	private embedVideo(fileUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+	private embedVideo(fileUrl: string, filePath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		const embedArgumentWidthHeight = parseEmbedArgumentWidthHeight(embedArguments);
+		
+		// Create container for video and button
+		const container = document.createElement("div");
+		container.classList.add("external-embed-video-container");
+
+		// Create and configure video
 		const video = document.createElement("video");
 		video.src = fileUrl;
 		video.controls = true;
@@ -273,20 +296,66 @@ export class EmbedProcessor {
 		if (embedArgumentWidthHeight.height) {
 			video.height = embedArgumentWidthHeight.height;
 		}
-		element.appendChild(video);
+		container.appendChild(video);
+
+		// Create open file button
+		const openButton = document.createElement("button");
+		openButton.innerHTML = "🔗";
+		openButton.title = "Open with system default program";
+		openButton.classList.add("external-embed-open-button");
+		openButton.addEventListener("click", () => {
+			openFileWithDefaultProgram(filePath, (error) => {
+				if (error) {
+					new Notice("Failed to open file: " + error.message);
+				}
+			});
+		});
+
+		container.appendChild(openButton);
+		element.appendChild(container);
 	}
 
-	private embedAudio(fileUrl: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+	private embedAudio(fileUrl: string, filePath: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		// Create container for audio and button
+		const container = document.createElement("div");
+		container.classList.add("external-embed-audio-container");
+
+		// Create and configure audio
 		const audio = document.createElement("audio");
 		audio.src = fileUrl;
 		audio.controls = true;
-		element.appendChild(audio);
+		container.appendChild(audio);
+
+		// Create open file button
+		const openButton = document.createElement("button");
+		openButton.innerHTML = "🔗";
+		openButton.title = "Open with system default program";
+		openButton.classList.add("external-embed-audio-open-button");
+		openButton.addEventListener("click", () => {
+			openFileWithDefaultProgram(filePath, (error) => {
+				if (error) {
+					new Notice("Failed to open file: " + error.message);
+				}
+			});
+		});
+		container.appendChild(openButton);
+
+		element.appendChild(container);
 	}
 
 	private embedFolder(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
-		const folder = document.createElement("div");
+		const folder = document.createElement("a");
+		folder.href = "#";
 		folder.textContent = path.basename(fullPath);
 		folder.classList.add("external-embed-folder-header");
+		folder.title = "Open folder with system default program";
+		folder.addEventListener("click", () => {
+			openFileWithDefaultProgram(fullPath, (error) => {
+				if (error) {
+					new Notice("Failed to open folder: " + error.message);
+				}
+			});
+		});
 		element.appendChild(folder);
 
 		const embedFolderArguments = parseEmbedFolderArguments(embedArguments);
@@ -318,7 +387,7 @@ export class EmbedProcessor {
 				const link = document.createElement("a");
 				link.href = "#";
 				link.textContent = file.name;
-
+				link.title = "Click to open file with system default program";
 				const fullFilePath = path.join(fullPath, file.name);
 				link.addEventListener("click", () => {
 					openFileWithDefaultProgram(fullFilePath, (error) => {
@@ -368,12 +437,25 @@ export class EmbedProcessor {
 	}
 
 	private async embedMarkdown(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
-		const header = document.createElement("strong");
+		const header = document.createElement("a");
+		header.href = "#";
+		header.classList.add("external-embed-markdown-header");
+		header.title = "Open with system default program";
+		
 		if (embedArguments === '') {
 			header.textContent = path.basename(fullPath);
 		} else {
 			header.textContent = path.basename(fullPath) + "#" + embedArguments;
 		}
+
+		header.addEventListener("click", () => {
+			openFileWithDefaultProgram(fullPath, (error) => {
+				if (error) {
+					new Notice("Failed to open file: " + error.message);
+				}
+			});
+		});
+
 		element.appendChild(header);
 
 		const markdownContent = await fs.promises.readFile(fullPath, 'utf-8');
@@ -423,13 +505,13 @@ export class EmbedProcessor {
 				this.embedPdfWithIframe(embedUrl, embedData.embedArguments, element, context);
 				break;
 			case 'image':
-				this.embedImage(fileUrl, embedData.embedArguments, element, context);
+				this.embedImage(fileUrl, fullPath, embedData.embedArguments, element, context);
 				break;
 			case 'video':
-				this.embedVideo(fileUrl, embedData.embedArguments, element, context);
+				this.embedVideo(fileUrl, fullPath, embedData.embedArguments, element, context);
 				break;
 			case 'audio':
-				this.embedAudio(fileUrl, element, context);
+				this.embedAudio(fileUrl, fullPath, element, context);
 				break;
 			case 'markdown':
 				this.embedMarkdown(fullPath, embedData.embedArguments, element, context);
