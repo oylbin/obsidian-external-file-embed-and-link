@@ -1,5 +1,10 @@
 import * as path from "path";
 import { ImageExtensions, isAudio, isImage, isMarkdown, isPDF, isVideo, MarkdownExtensions, VideoExtensions } from "utils";
+import { MarkdownPostProcessorContext } from 'obsidian';
+import * as fs from 'fs';
+import { openFileWithDefaultProgram } from './utils';
+import { Notice } from 'obsidian';
+import { extractHeaderSection } from './utils';
 
 export class EmbedData {
 	embedType: 'pdf' | 'image' | 'markdown' | 'audio' | 'video' | 'other' | 'folder';
@@ -217,4 +222,223 @@ export function parseEmbedData(inputLine: string): EmbedData {
 		embedFilePath: inputLine,
 	};
 
+}
+
+export class EmbedProcessor {
+	constructor(private port: number) {}
+
+	private embedPdfWithIframe(embedUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const iframe = document.createElement("iframe");
+		const embedPdfArguments = parseEmbedPdfArguments(embedArguments);
+		if (embedPdfArguments.page) {
+			iframe.src = embedUrl + "&page=" + embedPdfArguments.page;
+		} else {
+			iframe.src = embedUrl;
+		}
+		iframe.classList.add("external-embed-pdf-iframe");
+		if (embedPdfArguments.width || embedPdfArguments.height) {
+			iframe.classList.add("external-embed-pdf-iframe-custom-size");
+			if (embedPdfArguments.width) {
+				iframe.style.setProperty("--iframe-width", embedPdfArguments.width);
+			}
+			if (embedPdfArguments.height) {
+				iframe.style.setProperty("--iframe-height", embedPdfArguments.height);
+			}
+		}
+		element.appendChild(iframe);
+	}
+
+	private embedImage(fileUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const embedArgumentWidthHeight = parseEmbedArgumentWidthHeight(embedArguments);
+		const img = document.createElement("img");
+
+		if (embedArgumentWidthHeight.width) {
+			img.width = embedArgumentWidthHeight.width;
+		}
+		if (embedArgumentWidthHeight.height) {
+			img.height = embedArgumentWidthHeight.height;
+		}
+		img.src = fileUrl;
+		element.appendChild(img);
+	}
+
+	private embedVideo(fileUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const embedArgumentWidthHeight = parseEmbedArgumentWidthHeight(embedArguments);
+		const video = document.createElement("video");
+		video.src = fileUrl;
+		video.controls = true;
+		if (embedArgumentWidthHeight.width) {
+			video.width = embedArgumentWidthHeight.width;
+		}
+		if (embedArgumentWidthHeight.height) {
+			video.height = embedArgumentWidthHeight.height;
+		}
+		element.appendChild(video);
+	}
+
+	private embedAudio(fileUrl: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const audio = document.createElement("audio");
+		audio.src = fileUrl;
+		audio.controls = true;
+		element.appendChild(audio);
+	}
+
+	private embedFolder(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const folder = document.createElement("div");
+		folder.textContent = path.basename(fullPath);
+		folder.classList.add("external-embed-folder-header");
+		element.appendChild(folder);
+
+		const embedFolderArguments = parseEmbedFolderArguments(embedArguments);
+		const fileList = document.createElement("ul");
+		fileList.classList.add("external-embed-folder-list");
+
+		fs.readdir(fullPath, { withFileTypes: true }, (err, files) => {
+			if (err) {
+				const errorMsg = document.createElement("div");
+				errorMsg.textContent = `Error reading folder: ${err.message}`;
+				errorMsg.classList.add("external-embed-folder-error");
+				element.appendChild(errorMsg);
+				return;
+			}
+
+			let filteredFiles = files;
+			if (embedFolderArguments.extensions) {
+				const allowedExtensions = embedFolderArguments.extensions.split(',').map(ext => ext.trim().toLowerCase());
+				filteredFiles = files.filter(file => {
+					const extension = path.extname(file.name).toLowerCase().slice(1);
+					return allowedExtensions.includes(extension);
+				});
+			}
+
+			filteredFiles.sort((a, b) => a.name.localeCompare(b.name));
+
+			filteredFiles.forEach(file => {
+				const listItem = document.createElement("li");
+				const link = document.createElement("a");
+				link.href = "#";
+				link.textContent = file.name;
+
+				const fullFilePath = path.join(fullPath, file.name);
+				link.addEventListener("click", () => {
+					openFileWithDefaultProgram(fullFilePath, (error) => {
+						if (error) {
+							new Notice("Failed to open file: " + error.message);
+						}
+					});
+				});
+
+				listItem.appendChild(link);
+				fileList.appendChild(listItem);
+			});
+		});
+
+		element.appendChild(fileList);
+	}
+
+	private embedOther(fullpath: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const link = document.createElement("a");
+		link.href = '#';
+		link.textContent = path.basename(fullpath);
+		link.addEventListener("click", () => {
+			openFileWithDefaultProgram(fullpath, (error) => {
+				if (error) {
+					new Notice("Failed to open file: " + error.message);
+				}
+			});
+		});
+		element.appendChild(link);
+	}
+
+	public embedError(errorMessage: string[] | string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const errorDiv = document.createElement("div");
+		if (Array.isArray(errorMessage)) {
+			errorMessage.forEach(msg => {
+				const errorMsg = document.createElement("div");
+				errorMsg.textContent = msg;
+				errorDiv.appendChild(errorMsg);
+			});
+		} else {
+			const errorMsg = document.createElement("div");
+			errorMsg.textContent = errorMessage;
+			errorDiv.appendChild(errorMsg);
+		}
+		errorDiv.classList.add("external-embed-error");
+		element.appendChild(errorDiv);
+	}
+
+	private async embedMarkdown(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const header = document.createElement("strong");
+		if (embedArguments === '') {
+			header.textContent = path.basename(fullPath);
+		} else {
+			header.textContent = path.basename(fullPath) + "#" + embedArguments;
+		}
+		element.appendChild(header);
+
+		const markdownContent = await fs.promises.readFile(fullPath, 'utf-8');
+		const htmlContent = await extractHeaderSection(markdownContent, embedArguments);
+
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(htmlContent, 'text/html');
+		const nodes = Array.from(doc.body.children);
+		nodes.forEach(node => {
+			const importedNode = document.importNode(node, true);
+			element.appendChild(importedNode);
+		});
+		element.classList.add("external-embed-markdown-element");
+	}
+
+	public processEmbed(directoryId: string, relativePath: string, element: HTMLElement, context: MarkdownPostProcessorContext, directoryPath: string) {
+		if (!directoryPath) {
+			const errorMessage = [
+				`Can not embed file from "${directoryId}://${relativePath}"`,
+				`You need to set the directory path for "${directoryId}" in the plugin settings.`
+			];
+			this.embedError(errorMessage, element, context);
+			return;
+		}
+
+		let filePath = relativePath.trim();
+		if (filePath.startsWith("/")) {
+			filePath = filePath.substring(1);
+		}
+
+		const embedData = parseEmbedData(filePath);
+		const fullPath = path.join(directoryPath, embedData.embedFilePath);
+		
+		if(!fs.existsSync(fullPath)) {
+			const errorMessage = [
+				`Can not embed file from "${directoryId}://${relativePath}"`,
+				`The file "${fullPath}" does not exist.`
+			];
+			this.embedError(errorMessage, element, context);
+			return;
+		}
+
+		const fileUrl = `http://127.0.0.1:${this.port}/download/${directoryId}?p=${embedData.embedFilePath}`;
+		const embedUrl = `http://127.0.0.1:${this.port}/embed/${directoryId}?p=${embedData.embedFilePath}`;
+		switch(embedData.embedType) {
+			case 'pdf':
+				this.embedPdfWithIframe(embedUrl, embedData.embedArguments, element, context);
+				break;
+			case 'image':
+				this.embedImage(fileUrl, embedData.embedArguments, element, context);
+				break;
+			case 'video':
+				this.embedVideo(fileUrl, embedData.embedArguments, element, context);
+				break;
+			case 'audio':
+				this.embedAudio(fileUrl, element, context);
+				break;
+			case 'markdown':
+				this.embedMarkdown(fullPath, embedData.embedArguments, element, context);
+				break;
+			case 'folder':
+				this.embedFolder(fullPath, embedData.embedArguments, element, context);
+				break;
+			default:
+				this.embedOther(fullPath, element, context);
+		}
+	}
 }
