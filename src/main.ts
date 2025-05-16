@@ -1,6 +1,6 @@
 import { Editor, MarkdownView, Notice, Plugin } from 'obsidian';
 import * as path from 'path';
-import { getRelativePath } from './utils';
+import { getRelativePath, openFileWithDefaultProgram } from './utils';
 import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab } from './settings';
 import { VirtualDirectoryManagerImpl } from './VirtualDirectoryManager';
 import { getLocalMachineId } from './local-settings';
@@ -48,6 +48,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.context.directoryConfigManager, localMachineId));
 
 		this.embedProcessor = new EmbedProcessor(this.context.port, this.context.directoryConfigManager);
+		this.embedProcessor.load();
 		this.linkProcessor = new LinkProcessor(
 			this.context.homeDirectory,
 			this.context.vaultDirectory,
@@ -101,7 +102,6 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			this.linkProcessor.processInlineLink(element, context);
 		});
 	}
-
 	private async selectFileAndCreateCode(editor: Editor, 
 		createCodeFn: (directoryId: string, filePath: string) => string) {
 		const localDirectories = this.context.directoryConfigManager.getAllLocalDirectories();
@@ -158,6 +158,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 	onunload() {
 		this.httpServer.stop();
+		this.embedProcessor.unload();
 		if (this.cleanupDropHandler) {
 			this.cleanupDropHandler();
 			this.cleanupDropHandler = null;

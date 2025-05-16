@@ -21,7 +21,50 @@
   <pdfjs-viewer-element src="URL_TO_REPLACE" viewer-path="/assets/pdfjs-5.2.133-dist" locale="en" page="PAGE_TO_REPLACE">
   </pdfjs-viewer-element>
   <script type="module" src="http://127.0.0.1:PORT_TO_REPLACE/assets/pdfjs-viewer-element-2.7.1.js"></script>
+  <script>
+	var retryCount = 0;
+    // Wait for the PDF viewer to be fully loaded
+    window.addEventListener('load', () => {
+      // Get the iframe element
+      const iframe = document.querySelector('pdfjs-viewer-element').shadowRoot.querySelector('iframe');
+      
+      // Function to handle iframe load
+      const handleIframeLoad = (iframe) => {
+        // console.log("pdf.html iframe loaded");
+        // Get the open file button
+        const openButton = iframe.contentDocument.getElementById('pdfjs-open-file-button');
+        // console.log("pdf.html openButton: ", openButton);
+        if (openButton) {
+          // Add click event listener
+          openButton.addEventListener('click', () => {
+            // Send message to parent window
+            // console.log("pdf.html openButton clicked");
+            window.parent.postMessage({ type: 'openPdfFile', fullPath: 'FULL_PATH_TO_REPLACE' }, '*');
+          });
+        } else {
+        //   console.log("pdf.html openButton not found");
+		  // try again after 100ms
+		  retryCount++;
+		  if(retryCount < 3){
+			setTimeout(() => {
+				handleIframeLoad(iframe);
+			}, 100);
+		  }else{
+			console.log("pdf.html openButton not found after 3 retries");
+		  }
+        }
+      };
 
+      // If iframe is already loaded
+      if (iframe.contentDocument.readyState === 'complete') {
+        handleIframeLoad(iframe);
+      } else {
+        // If iframe is still loading
+        iframe.addEventListener('load', () => handleIframeLoad(iframe));
+      }
+
+    });
+  </script>
 </body>
 
 </html>

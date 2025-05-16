@@ -5272,6 +5272,11 @@ body.wait::before{
           mask-image:var(--toolbarButton-search-icon);
 }
 
+#pdfjs-open-file-button::before{
+  -webkit-mask-image:var(--toolbarButton-openFile-icon);
+          mask-image:var(--toolbarButton-openFile-icon);
+}
+
 .pdfSidebarNotification::after{
   position:absolute;
   display:inline-block;

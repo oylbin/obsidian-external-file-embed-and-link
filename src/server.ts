@@ -88,7 +88,7 @@ function getFilePathFromUrl(url: string, context: CrossComputerLinkContext) {
 export async function embedRequestHandler(url: string, req: http.IncomingMessage, res: http.ServerResponse, context: CrossComputerLinkContext) {
 	res.setHeader('Content-Type', 'text/html; charset=utf-8');
 	// url may contain ? followed by parameters, split url and parameters
-	const [, params] = url.split('?');
+	const [urlWithoutParams, params] = url.split('?');
 	const parsedParams = parseUrlParams(params);
 	const extname = path.extname(parsedParams.p).toLowerCase();
 	const template = await getTemplate(extname);
@@ -102,7 +102,19 @@ export async function embedRequestHandler(url: string, req: http.IncomingMessage
 		// encode downloadUrl if it is passed as a url parameter
 		// const encodedDownloadUrl = encodeURIComponent(downloadUrl);
 		const encodedDownloadUrl = downloadUrl;
-		let multiLineStr = template.replace("URL_TO_REPLACE", encodedDownloadUrl).replace("FILENAME_TO_REPLACE", path.basename(url));
+		// const relativePath = parsedParams.p;
+		// console.log(`urlWithoutParams: ${urlWithoutParams}`);
+		const directoryId = urlWithoutParams.split('/')[2];
+		const directoryPath = context.directoryConfigManager.getLocalDirectory(directoryId);
+		if(!directoryPath) {
+			throw new Error("Invalid directory id: " + directoryId);
+		}
+		const fullPath = path.join(directoryPath, parsedParams.p);
+		const fullPathWithForwardSlashes = fullPath.replace(/\\/g, "/");	
+		// console.log(`embedRequestHandler fullPath: ${fullPathWithForwardSlashes}`);
+		let multiLineStr = template.replace("URL_TO_REPLACE", encodedDownloadUrl)
+		.replace("FILENAME_TO_REPLACE", path.basename(url))
+		.replace("FULL_PATH_TO_REPLACE", fullPathWithForwardSlashes);
 		if(extname === '.pdf'){
 			// TODO Currently only pdf embed is supported, and only pdf has parameters. If there are more embed types in the future, better organization of code is needed.
 			// Here params should be in the form of page=123

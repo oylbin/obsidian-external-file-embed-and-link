@@ -71,6 +71,7 @@ def get_urls2():
 /assets/pdfjs-5.2.133-dist/web/images/toolbarButton-zoomOut.svg
 /assets/pdfjs-5.2.133-dist/web/images/treeitem-collapsed.svg
 /assets/pdfjs-5.2.133-dist/web/images/treeitem-expanded.svg
+/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-openFile.svg
 """
     for filename in filenames.split('\n'):
         if filename.strip() == '':

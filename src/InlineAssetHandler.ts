@@ -165,6 +165,13 @@ export async function InlineAssetHandler(url: string, req: http.IncomingMessage,
 		return;
 	}
 
+	if(url === "/assets/pdfjs-5.2.133-dist/web/images/toolbarButton-openFile.svg") {
+		res.setHeader('Content-Type', 'image/svg+xml');
+		const content = await import('inline:./assets/pdfjs-5.2.133-dist/web/images/toolbarButton-openFile.svg');
+		res.end(content.default);
+		return;
+	}
+
 	res.writeHead(404);
 	res.end(`Invalid path ${url}`);
 	console.log("Invalid path", url);

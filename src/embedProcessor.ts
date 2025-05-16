@@ -1,6 +1,6 @@
 import * as path from "path";
 import { ImageExtensions, isAudio, isImage, isMarkdown, isPDF, isVideo, MarkdownExtensions, VideoExtensions } from "utils";
-import { MarkdownPostProcessorContext } from 'obsidian';
+import { MarkdownPostProcessorContext, Component } from 'obsidian';
 import * as fs from 'fs';
 import { openFileWithDefaultProgram } from './utils';
 import { Notice } from 'obsidian';
@@ -225,13 +225,34 @@ export function parseEmbedData(inputLine: string): EmbedData {
 
 }
 
-export class EmbedProcessor {
+export class EmbedProcessor extends Component {
 	constructor(
 		private port: number,
 		private directoryConfigManager: VirtualDirectoryManager
-	) {}
+	) {
+		super();
+	}
 
-	private embedPdfWithIframe(embedUrl: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
+	onload() {
+		// console.log("EmbedProcessor onload");
+		// Register message event handler
+		this.registerDomEvent(window, 'message', (event: MessageEvent) => {
+			// console.log(event);
+			if (event.data.type === 'openPdfFile') {
+				const fullPath = event.data.fullPath;
+				// console.log(`openPdfFile fullPath: ${fullPath}`);
+				if (fullPath) {
+					openFileWithDefaultProgram(fullPath, (error) => {
+						if (error) {
+							new Notice("Failed to open file: " + error.message);
+						}
+					});
+				}
+			}
+		});
+	}
+
+	private embedPdfWithIframe(embedUrl: string, fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		const iframe = document.createElement("iframe");
 		const embedPdfArguments = parseEmbedPdfArguments(embedArguments);
 		if (embedPdfArguments.page) {
@@ -249,6 +270,7 @@ export class EmbedProcessor {
 				iframe.style.setProperty("--iframe-height", embedPdfArguments.height);
 			}
 		}
+
 		element.appendChild(iframe);
 	}
 
@@ -502,7 +524,7 @@ export class EmbedProcessor {
 		const embedUrl = `http://127.0.0.1:${this.port}/embed/${directoryId}?p=${embedData.embedFilePath}`;
 		switch(embedData.embedType) {
 			case 'pdf':
-				this.embedPdfWithIframe(embedUrl, embedData.embedArguments, element, context);
+				this.embedPdfWithIframe(embedUrl, fullPath, embedData.embedArguments, element, context);
 				break;
 			case 'image':
 				this.embedImage(fileUrl, fullPath, embedData.embedArguments, element, context);
