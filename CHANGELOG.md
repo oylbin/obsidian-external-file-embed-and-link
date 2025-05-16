@@ -2,6 +2,12 @@
 
 All notable changes to the External File Embed and Link plugin will be documented in this file.
 
+## [1.5.2]
+
+### Added
+
+- Add a button or clickable text to open the embedded files
+
 ## [1.5.1]
 
 ### Added
