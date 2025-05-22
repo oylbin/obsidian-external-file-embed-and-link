@@ -132,6 +132,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 			if (!result.canceled && result.filePaths.length > 0) {
 				result.filePaths.forEach((filePath: string) => {
+					console.log("filePath", filePath);
 					try {
 						const relativePath = getRelativePath(selectedDirectoryPath, filePath);
 						const embedCode = createCodeFn(selectedDirectoryId, relativePath);

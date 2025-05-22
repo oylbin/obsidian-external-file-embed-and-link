@@ -17,6 +17,7 @@
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
 		"builtin-modules": "3.3.0",
+		"dotenv": "^16.5.0",
 		"esbuild": "^0.25.4",
 		"esbuild-plugin-inline-import": "^1.1.0",
 		"obsidian": "latest",

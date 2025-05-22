@@ -368,7 +368,7 @@ export class EmbedProcessor extends Component {
 	private embedFolder(fullPath: string, embedArguments: string, element: HTMLElement, context: MarkdownPostProcessorContext) {
 		const folder = document.createElement("a");
 		folder.href = "#";
-		folder.textContent = path.basename(fullPath);
+		folder.textContent = path.basename(fullPath) + "/";
 		folder.classList.add("external-embed-folder-header");
 		folder.title = "Open folder with system default program";
 		folder.addEventListener("click", () => {
@@ -407,10 +407,20 @@ export class EmbedProcessor extends Component {
 			filteredFiles.forEach(file => {
 				const listItem = document.createElement("li");
 				const link = document.createElement("a");
-				link.href = "#";
-				link.textContent = file.name;
-				link.title = "Click to open file with system default program";
 				const fullFilePath = path.join(fullPath, file.name);
+				// check file or folder
+				if (file.isDirectory()) {
+					link.href = "#";
+					link.textContent = file.name + "/";
+					link.title = "Click to open folder with system default program";
+					link.classList.add("external-embed-folder-link");
+				} else {
+					link.href = "#";
+					link.textContent = file.name;
+					link.title = "Click to open file with system default program";
+					link.classList.add("external-embed-file-link");
+				}
+				
 				link.addEventListener("click", () => {
 					openFileWithDefaultProgram(fullFilePath, (error) => {
 						if (error) {
