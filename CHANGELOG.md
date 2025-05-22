@@ -4,7 +4,7 @@ All notable changes to the External File Embed and Link plugin will be documente
 
 ## [1.5.3]
 
-- Add better file type identity for folders #11
+- Add better file type identity for folders [#11](https://github.com/oylbin/obsidian-external-file-embed-and-link/issues/11)
 
 ## [1.5.2]
 
