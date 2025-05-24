@@ -72,6 +72,9 @@ def get_urls2():
 /assets/pdfjs-5.2.133-dist/web/images/treeitem-collapsed.svg
 /assets/pdfjs-5.2.133-dist/web/images/treeitem-expanded.svg
 /assets/pdfjs-5.2.133-dist/web/images/toolbarButton-openFile.svg
+/assets/pdfjs-5.2.133-dist/web/wasm/openjpeg.wasm
+/assets/pdfjs-5.2.133-dist/web/wasm/openjpeg_nowasm_fallback.js
+/assets/pdfjs-5.2.133-dist/web/wasm/qcms_bg.wasm
 """
     for filename in filenames.split('\n'):
         if filename.strip() == '':

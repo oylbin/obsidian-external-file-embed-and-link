@@ -226,6 +226,12 @@ async function assetRequestHandler(url: string, req: http.IncomingMessage, res: 
 		res.setHeader('Content-Type', 'application/javascript');
 		const content = await import('inline:./assets/pdfjs-viewer-element-2.7.1.js');
 		res.end(content.default);
+
+	}else if(url.endsWith(".map")) {
+		// pdfjs viewer element uses source map files, but they are not needed for the viewer element
+		res.writeHead(404);
+		res.end();
+		return;
 	}else{
 		await InlineAssetHandler(url, req, res);
 	}

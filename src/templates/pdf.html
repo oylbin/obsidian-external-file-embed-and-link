@@ -23,6 +23,7 @@
   <script type="module" src="http://127.0.0.1:PORT_TO_REPLACE/assets/pdfjs-viewer-element-2.7.1.js"></script>
   <script>
 	var retryCount = 0;
+  const maxRetryCount = 5;
     // Wait for the PDF viewer to be fully loaded
     window.addEventListener('load', () => {
       // Get the iframe element
@@ -45,12 +46,12 @@
         //   console.log("pdf.html openButton not found");
 		  // try again after 100ms
 		  retryCount++;
-		  if(retryCount < 3){
+		  if(retryCount < maxRetryCount){
 			setTimeout(() => {
 				handleIframeLoad(iframe);
-			}, 100);
+			}, 100 * Math.pow(2, retryCount));
 		  }else{
-			console.log("pdf.html openButton not found after 3 retries");
+			console.log("pdf.html openButton not found after " + maxRetryCount + " retries");
 		  }
         }
       };

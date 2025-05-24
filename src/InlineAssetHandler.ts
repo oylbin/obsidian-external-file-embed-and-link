@@ -172,6 +172,27 @@ export async function InlineAssetHandler(url: string, req: http.IncomingMessage,
 		return;
 	}
 
+	if(url === "/assets/pdfjs-5.2.133-dist/web/wasm/openjpeg.wasm") {
+		res.setHeader('Content-Type', 'application/wasm');
+		const content = await import('inline:./assets/pdfjs-5.2.133-dist/web/wasm/openjpeg.wasm');
+		res.end(content.default);
+		return;
+	}
+
+	if(url === "/assets/pdfjs-5.2.133-dist/web/wasm/openjpeg_nowasm_fallback.js") {
+		res.setHeader('Content-Type', 'text/javascript');
+		const content = await import('inline:./assets/pdfjs-5.2.133-dist/web/wasm/openjpeg_nowasm_fallback.js');
+		res.end(content.default);
+		return;
+	}
+
+	if(url === "/assets/pdfjs-5.2.133-dist/web/wasm/qcms_bg.wasm") {
+		res.setHeader('Content-Type', 'application/wasm');
+		const content = await import('inline:./assets/pdfjs-5.2.133-dist/web/wasm/qcms_bg.wasm');
+		res.end(content.default);
+		return;
+	}
+
 	res.writeHead(404);
 	res.end(`Invalid path ${url}`);
 	console.log("Invalid path", url);
