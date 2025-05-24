@@ -89,7 +89,16 @@ export default class CrossComputerLinkPlugin extends Plugin {
 
 		this.registerMarkdownCodeBlockProcessor("EmbedRelativeTo", (source, el, ctx) => {
 			const fileUrl = source.trim();
-			const [directoryId, relativePath] = fileUrl.split('://', 2);
+			let directoryId: string;
+			let relativePath: string;
+			if (fileUrl.startsWith("./")) {
+				directoryId = "vault";
+				const directoryOfCurrentNote = path.dirname(ctx.sourcePath);
+				relativePath = path.join(directoryOfCurrentNote, fileUrl.slice(2));
+				console.log("relativePath", relativePath);
+			}else{
+				[directoryId, relativePath] = fileUrl.split('://', 2);
+			}
 			const directoryPath = this.context.directoryConfigManager.getLocalDirectory(directoryId.toLowerCase());
 			if (directoryPath) {
 				this.embedProcessor.processEmbed(directoryId.toLowerCase(), relativePath, el, ctx, directoryPath);
