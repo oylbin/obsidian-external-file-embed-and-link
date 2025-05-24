@@ -20,14 +20,12 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
+const pathSep = os.platform() === "win32" ? "\\" : "/";
 // Get the test vault plugin directory path from .env file
 // If the environment variable doesn't exist, use the default path
 const testVaultPluginDir = process.env.TEST_VAULT_PLUGIN_DIR
-	? process.env.TEST_VAULT_PLUGIN_DIR.replace(/^~/, os.homedir())
-	: path.join(
-		os.homedir(),
-		"SynologyDrive/AppDataSync/testvault/.obsidian/plugins/obsidian-external-file-embed-and-link"
-	);
+	? process.env.TEST_VAULT_PLUGIN_DIR.replace(/^~/, os.homedir()).replace(/\//g, pathSep)
+	: "";
 
 // Function to copy files to the test vault
 const copyToTestVault = (srcFile, destDir) => {
@@ -53,7 +51,9 @@ const watchCssFile = () => {
 	if (fs.existsSync(cssFile)) {
 		fs.watchFile(cssFile, { interval: 100 }, () => {
 			console.log("styles.css has been modified");
-			copyToTestVault(cssFile, testVaultPluginDir);
+			if(testVaultPluginDir.length > 0) {
+				copyToTestVault(cssFile, testVaultPluginDir);
+			}
 		});
 		console.log("Watching for changes in styles.css");
 	}
@@ -66,7 +66,9 @@ const copyFilesPlugin = {
 		build.onEnd(result => {
 			if (result.errors.length === 0) {
 				const mainJsFile = path.resolve("main.js");
-				copyToTestVault(mainJsFile, testVaultPluginDir);
+				if(testVaultPluginDir.length > 0) {
+					copyToTestVault(mainJsFile, testVaultPluginDir);
+				}
 			}
 		});
 	},
@@ -120,6 +122,7 @@ if (prod) {
 	
 	// Watch for CSS file changes
 	watchCssFile();
-	
-	console.log(`Development mode: Files will be automatically copied to test vault directory [${testVaultPluginDir}]`);
+	if(testVaultPluginDir.length > 0) {
+		console.log(`Development mode: Files will be automatically copied to test vault directory [${testVaultPluginDir}]`);
+	}
 }

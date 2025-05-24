@@ -530,8 +530,8 @@ export class EmbedProcessor extends Component {
 			return;
 		}
 
-		const fileUrl = `http://127.0.0.1:${this.port}/download/${directoryId}?p=${embedData.embedFilePath}`;
-		const embedUrl = `http://127.0.0.1:${this.port}/embed/${directoryId}?p=${embedData.embedFilePath}`;
+		const fileUrl = `http://127.0.0.1:${this.port}/download/${directoryId}?p=${encodeURIComponent(embedData.embedFilePath)}`;
+		const embedUrl = `http://127.0.0.1:${this.port}/embed/${directoryId}?p=${encodeURIComponent(embedData.embedFilePath)}`;
 		switch(embedData.embedType) {
 			case 'pdf':
 				this.embedPdfWithIframe(embedUrl, fullPath, embedData.embedArguments, element, context);

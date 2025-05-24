@@ -2,6 +2,10 @@
 
 All notable changes to the External File Embed and Link plugin will be documented in this file.
 
+## [1.5.4]
+
+- Fix issue with special characters in file paths [#13](https://github.com/oylbin/obsidian-external-file-embed-and-link/issues/13)
+
 ## [1.5.3]
 
 - Add better file type identity for folders [#11](https://github.com/oylbin/obsidian-external-file-embed-and-link/issues/11)
