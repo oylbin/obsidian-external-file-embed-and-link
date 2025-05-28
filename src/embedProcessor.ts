@@ -26,15 +26,24 @@ export class EmbedPdfArguments {
 
 export class EmbedFolderArguments {
 	extensions = ''; // can filter files by extensions, separated by comma, eg. pdf,txt
+	includePatterns: string[] = []; // can filter files by patterns, separated by comma, eg. *.pdf,*.txt
+	excludePatterns: string[] = []; // can exclude files by patterns, separated by comma, eg. *.pdf,*.txt
 }
 
 export function parseEmbedFolderArguments(embedArguments: string): EmbedFolderArguments {
+	console.log(`parseEmbedFolderArguments: ${embedArguments}`);
 	const embedFolderArguments = new EmbedFolderArguments();
 	const params = embedArguments.split('&');
 	for (const param of params) {
 		const [key, value] = param.split('=');
 		if (key === 'extensions') {
 			embedFolderArguments.extensions = value;
+		}
+		if (key === 'include') {
+			embedFolderArguments.includePatterns.push(value);
+		}
+		if (key === 'exclude') {
+			embedFolderArguments.excludePatterns.push(value);
 		}
 	}
 	return embedFolderArguments;
