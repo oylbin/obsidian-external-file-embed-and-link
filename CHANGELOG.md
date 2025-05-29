@@ -2,6 +2,10 @@
 
 All notable changes to the External File Embed and Link plugin will be documented in this file.
 
+## [1.5.6]
+
+- Add include/exclude options for embed folder [#14](https://github.com/oylbin/obsidian-external-file-embed-and-link/issues/14)
+
 ## [1.5.5]
 
 - Fix issue with pdfjs viewer image rendering [#7](https://github.com/oylbin/obsidian-external-file-embed-and-link/issues/7)
