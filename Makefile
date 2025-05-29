@@ -17,3 +17,6 @@ download:
 	curl -o manifest.json -L https://github.com/oylbin/obsidian-external-file-embed-and-link/releases/latest/download/manifest.json
 	curl -o styles.css -L https://github.com/oylbin/obsidian-external-file-embed-and-link/releases/latest/download/styles.css
 	curl -o main.js -L https://github.com/oylbin/obsidian-external-file-embed-and-link/releases/latest/download/main.js
+
+test:
+	npm run test
