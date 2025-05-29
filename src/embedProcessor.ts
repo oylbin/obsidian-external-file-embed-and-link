@@ -1,12 +1,12 @@
 import * as path from "path";
 import { minimatch } from 'minimatch';
-import { ImageExtensions, isAudio, isImage, isMarkdown, isPDF, isVideo, MarkdownExtensions, VideoExtensions } from "utils";
+import { ImageExtensions, isAudio, isImage, isMarkdown, isPDF, isVideo, MarkdownExtensions, VideoExtensions } from "./utils";
 import { MarkdownPostProcessorContext, Component } from 'obsidian';
 import * as fs from 'fs';
 import { openFileWithDefaultProgram } from './utils';
 import { Notice } from 'obsidian';
 import { extractHeaderSection } from './utils';
-import { VirtualDirectoryManager } from "VirtualDirectoryManager";
+import { VirtualDirectoryManager } from "./VirtualDirectoryManager";
 
 export class EmbedData {
 	embedType: 'pdf' | 'image' | 'markdown' | 'audio' | 'video' | 'other' | 'folder';
