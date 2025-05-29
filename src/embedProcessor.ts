@@ -114,8 +114,9 @@ export function filterFolderFiles(files: fs.Dirent[], embedFolderArguments: Embe
 	if (embedFolderArguments.excludePatterns.length > 0) {
 		filteredFiles = filteredFiles.filter(file => {
 			const fileName = file.name.toLowerCase();
-			return embedFolderArguments.excludePatterns.some(pattern => {
-				return !minimatch(fileName, pattern);
+			// exclude patterns are applied to all files, so if any pattern matches, the file should be excluded
+			return !embedFolderArguments.excludePatterns.some(pattern => {
+				return minimatch(fileName, pattern);
 			});
 		});
 	}
