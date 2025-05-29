@@ -32,7 +32,7 @@ export class EmbedFolderArguments {
 }
 
 export function parseEmbedFolderArguments(embedArguments: string): EmbedFolderArguments {
-	console.log(`parseEmbedFolderArguments: ${embedArguments}`);
+	// console.log(`parseEmbedFolderArguments: ${embedArguments}`);
 	const embedFolderArguments = new EmbedFolderArguments();
 	const params = embedArguments.split('&');
 	for (const param of params) {
@@ -428,7 +428,7 @@ export class EmbedProcessor extends Component {
 		element.appendChild(folder);
 
 		const embedFolderArguments = parseEmbedFolderArguments(embedArguments);
-		console.log("embedFolderArguments", embedFolderArguments);
+		// console.log("embedFolderArguments", embedFolderArguments);
 		const fileList = document.createElement("ul");
 		fileList.classList.add("external-embed-folder-list");
 
@@ -442,7 +442,7 @@ export class EmbedProcessor extends Component {
 			}
 
 			const filteredFiles = filterFolderFiles(files, embedFolderArguments);
-			console.log("Filtered files", filteredFiles);
+			// console.log("Filtered files", filteredFiles);
 
 			filteredFiles.forEach(file => {
 				const listItem = document.createElement("li");

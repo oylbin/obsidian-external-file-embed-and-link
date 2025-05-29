@@ -95,7 +95,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				directoryId = "vault";
 				const directoryOfCurrentNote = path.dirname(ctx.sourcePath);
 				relativePath = path.join(directoryOfCurrentNote, fileUrl.slice(2));
-				console.log("relativePath", relativePath);
+				// console.log("relativePath", relativePath);
 			}else{
 				[directoryId, relativePath] = fileUrl.split('://', 2);
 			}
