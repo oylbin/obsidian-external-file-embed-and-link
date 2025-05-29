@@ -91,6 +91,38 @@ export function parseEmbedArgumentWidthHeight(embedArguments: string): EmbedArgu
 	return embedArgumentWidthHeight;
 }
 
+export function filterFolderFiles(files: fs.Dirent[], embedFolderArguments: EmbedFolderArguments): fs.Dirent[] {
+	// filter order: extensions -> includePatterns -> excludePatterns
+	let filteredFiles = files;
+
+	if (embedFolderArguments.extensions.length > 0) {
+		filteredFiles = filteredFiles.filter(file => {
+			const extension = path.extname(file.name).toLowerCase().slice(1);
+			return embedFolderArguments.extensions.includes(extension);
+		});
+	}
+
+	if (embedFolderArguments.includePatterns.length > 0) {
+		filteredFiles = filteredFiles.filter(file => {
+			const fileName = file.name.toLowerCase();
+			return embedFolderArguments.includePatterns.some(pattern => {
+				return minimatch(fileName, pattern);
+			});
+		});
+	}
+
+	if (embedFolderArguments.excludePatterns.length > 0) {
+		filteredFiles = filteredFiles.filter(file => {
+			const fileName = file.name.toLowerCase();
+			return embedFolderArguments.excludePatterns.some(pattern => {
+				return !minimatch(fileName, pattern);
+			});
+		});
+	}
+
+	return filteredFiles.sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function parseEmbedData(inputLine: string): EmbedData {
 	// console.log("embed input: ", inputLine);
 	inputLine = inputLine.trim();
@@ -408,40 +440,8 @@ export class EmbedProcessor extends Component {
 				return;
 			}
 
-			// filter order: extensions -> includePatterns -> excludePatterns
-
-			// if all filters are empty, show all files
-			// if file matches excludePatterns, it will be excluded, no matter what other filters are
-
-			let filteredFiles = files;
-			console.log("All files", filteredFiles);
-			if (embedFolderArguments.extensions.length > 0) {
-				filteredFiles = files.filter(file => {
-					const extension = path.extname(file.name).toLowerCase().slice(1);
-					return embedFolderArguments.extensions.includes(extension);
-				});
-			}
-			console.log("After extensions", filteredFiles);
-
-			if (embedFolderArguments.includePatterns.length > 0) {
-				filteredFiles = filteredFiles.filter(file => {
-					const fileName = file.name.toLowerCase();
-					return embedFolderArguments.includePatterns.some(pattern => {
-						return minimatch(fileName, pattern);
-					});
-				});
-			}
-			console.log("After includePatterns", filteredFiles);
-			if (embedFolderArguments.excludePatterns.length > 0) {
-				filteredFiles = filteredFiles.filter(file => {
-					const fileName = file.name.toLowerCase();
-					return embedFolderArguments.excludePatterns.some(pattern => {
-						return !minimatch(fileName, pattern);
-					});
-				});
-			}
-			console.log("After excludePatterns", filteredFiles);
-			filteredFiles.sort((a, b) => a.name.localeCompare(b.name));
+			const filteredFiles = filterFolderFiles(files, embedFolderArguments);
+			console.log("Filtered files", filteredFiles);
 
 			filteredFiles.forEach(file => {
 				const listItem = document.createElement("li");
