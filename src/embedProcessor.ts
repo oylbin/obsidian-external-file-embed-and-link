@@ -1,4 +1,5 @@
 import * as path from "path";
+import { minimatch } from 'minimatch';
 import { ImageExtensions, isAudio, isImage, isMarkdown, isPDF, isVideo, MarkdownExtensions, VideoExtensions } from "utils";
 import { MarkdownPostProcessorContext, Component } from 'obsidian';
 import * as fs from 'fs';
@@ -25,9 +26,9 @@ export class EmbedPdfArguments {
 }
 
 export class EmbedFolderArguments {
-	extensions = ''; // can filter files by extensions, separated by comma, eg. pdf,txt
-	includePatterns: string[] = []; // can filter files by patterns, separated by comma, eg. *.pdf,*.txt
-	excludePatterns: string[] = []; // can exclude files by patterns, separated by comma, eg. *.pdf,*.txt
+	extensions: string[] = []; // can filter files by extensions, separated by comma, eg. pdf,txt
+	includePatterns: string[] = []; // can filter files by glob patterns, separated by comma, eg. *.pdf,*.txt
+	excludePatterns: string[] = []; // can exclude files by glob patterns, separated by comma, eg. *.pdf,*.txt
 }
 
 export function parseEmbedFolderArguments(embedArguments: string): EmbedFolderArguments {
@@ -37,13 +38,17 @@ export function parseEmbedFolderArguments(embedArguments: string): EmbedFolderAr
 	for (const param of params) {
 		const [key, value] = param.split('=');
 		if (key === 'extensions') {
-			embedFolderArguments.extensions = value;
+			// Split the value by comma and add each extension to the array
+			const extensions = value.split(',').map(ext => ext.trim().toLowerCase());
+			embedFolderArguments.extensions.push(...extensions);
 		}
 		if (key === 'include') {
-			embedFolderArguments.includePatterns.push(value);
+			const includePatterns = value.split(',').map(pattern => pattern.trim());
+			embedFolderArguments.includePatterns.push(...includePatterns);
 		}
 		if (key === 'exclude') {
-			embedFolderArguments.excludePatterns.push(value);
+			const excludePatterns = value.split(',').map(pattern => pattern.trim());
+			embedFolderArguments.excludePatterns.push(...excludePatterns);
 		}
 	}
 	return embedFolderArguments;
@@ -390,6 +395,7 @@ export class EmbedProcessor extends Component {
 		element.appendChild(folder);
 
 		const embedFolderArguments = parseEmbedFolderArguments(embedArguments);
+		console.log("embedFolderArguments", embedFolderArguments);
 		const fileList = document.createElement("ul");
 		fileList.classList.add("external-embed-folder-list");
 
@@ -402,15 +408,39 @@ export class EmbedProcessor extends Component {
 				return;
 			}
 
+			// filter order: extensions -> includePatterns -> excludePatterns
+
+			// if all filters are empty, show all files
+			// if file matches excludePatterns, it will be excluded, no matter what other filters are
+
 			let filteredFiles = files;
-			if (embedFolderArguments.extensions) {
-				const allowedExtensions = embedFolderArguments.extensions.split(',').map(ext => ext.trim().toLowerCase());
+			console.log("All files", filteredFiles);
+			if (embedFolderArguments.extensions.length > 0) {
 				filteredFiles = files.filter(file => {
 					const extension = path.extname(file.name).toLowerCase().slice(1);
-					return allowedExtensions.includes(extension);
+					return embedFolderArguments.extensions.includes(extension);
 				});
 			}
+			console.log("After extensions", filteredFiles);
 
+			if (embedFolderArguments.includePatterns.length > 0) {
+				filteredFiles = filteredFiles.filter(file => {
+					const fileName = file.name.toLowerCase();
+					return embedFolderArguments.includePatterns.some(pattern => {
+						return minimatch(fileName, pattern);
+					});
+				});
+			}
+			console.log("After includePatterns", filteredFiles);
+			if (embedFolderArguments.excludePatterns.length > 0) {
+				filteredFiles = filteredFiles.filter(file => {
+					const fileName = file.name.toLowerCase();
+					return embedFolderArguments.excludePatterns.some(pattern => {
+						return !minimatch(fileName, pattern);
+					});
+				});
+			}
+			console.log("After excludePatterns", filteredFiles);
 			filteredFiles.sort((a, b) => a.name.localeCompare(b.name));
 
 			filteredFiles.forEach(file => {

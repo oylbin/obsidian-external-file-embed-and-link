@@ -13,6 +13,7 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@types/minimatch": "^5.1.2",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
@@ -26,6 +27,7 @@
 	},
 	"dependencies": {
 		"marked": "^15.0.4",
+		"minimatch": "^10.0.1",
 		"uuid": "^11.1.0"
 	}
 }
