@@ -157,4 +157,17 @@ describe('filterFolderFiles', () => {
         expect(result).toHaveLength(2);
         expect(result.map(f => f.name)).toEqual(['TEST.PDF', 'test.txt']);
     });
+
+	test('should filter by exclude patterns', () => {
+        const files = [
+            createMockFile('a.pdf'),
+            createMockFile('test.txt'),
+            createMockFile('test.md'),
+        ];
+        const args = new EmbedFolderArguments();
+        args.excludePatterns = ['test.*', '*.txt'];
+        const result = filterFolderFiles(files, args);
+        expect(result).toHaveLength(1);
+        expect(result.map(f => f.name)).toEqual(['a.pdf']);
+    });
 }); 
