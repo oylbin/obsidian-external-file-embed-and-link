@@ -21,6 +21,10 @@ All notable changes to the External File Embed and Link plugin will be documente
   `.env.example` for the template. The old `make install` / `make download`
   targets have been replaced by the new standardized targets.
 
+## [1.5.7]
+
+- Remember the last folder used per virtual directory when picking files for `Add external embed` / `Add external inline link`, so consecutive picks in the same folder no longer need to navigate from the root each time. Memory is per session and per virtual directory.
+
 ## [1.5.6]
 
 - Add include/exclude options for embed folder [#14](https://github.com/oylbin/obsidian-external-file-embed-and-link/issues/14)

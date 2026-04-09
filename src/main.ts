@@ -20,6 +20,9 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	private httpServer: HttpServer;
 	private embedProcessor: EmbedProcessor;
 	private linkProcessor: LinkProcessor;
+	// Remembers the last folder the user picked a file from, keyed by virtual
+	// directory id. Session-only: cleared on plugin reload / Obsidian restart.
+	private lastPickedFolders: Record<string, string> = {};
 
 	insertText(editor: Editor, text: string) {
 		const cursor = editor.getCursor();
@@ -111,7 +114,39 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			this.linkProcessor.processInlineLink(element, context);
 		});
 	}
-	private async selectFileAndCreateCode(editor: Editor, 
+	// Returns the path that should be passed as `defaultPath` to the file
+	// picker for the given virtual directory. Falls back to the virtual
+	// directory root when there is no remembered folder, when the remembered
+	// folder no longer exists, or when it has fallen outside the virtual
+	// directory (e.g. user changed the virtual directory's root in settings).
+	private resolvePickerDefaultPath(directoryId: string, virtualRoot: string): string {
+		const remembered = this.lastPickedFolders[directoryId];
+		if (!remembered) {
+			return virtualRoot;
+		}
+
+		const normalizedRoot = path.normalize(virtualRoot);
+		const normalizedRemembered = path.normalize(remembered);
+
+		if (!existsSync(normalizedRemembered)) {
+			delete this.lastPickedFolders[directoryId];
+			return virtualRoot;
+		}
+
+		const rel = path.relative(normalizedRoot, normalizedRemembered);
+		// `rel` starts with '..' when `remembered` is outside the root, and
+		// `path.isAbsolute(rel)` catches the Windows cross-drive case where
+		// `path.relative` returns an absolute path.
+		const inside = !rel.startsWith('..') && !path.isAbsolute(rel);
+		if (!inside) {
+			delete this.lastPickedFolders[directoryId];
+			return virtualRoot;
+		}
+
+		return normalizedRemembered;
+	}
+
+	private async selectFileAndCreateCode(editor: Editor,
 		createCodeFn: (directoryId: string, filePath: string) => string) {
 		const localDirectories = this.context.directoryConfigManager.getAllLocalDirectories();
 		if (Object.keys(localDirectories).length === 0) {
@@ -132,7 +167,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			}
 
 			const result = await remote.dialog.showOpenDialog({
-				defaultPath: selectedDirectoryPath,
+				defaultPath: this.resolvePickerDefaultPath(selectedDirectoryId, selectedDirectoryPath),
 				properties: ['openFile', 'multiSelections'],
 				filters: [
 					{ name: 'All Files', extensions: ['*'] }
@@ -140,6 +175,11 @@ export default class CrossComputerLinkPlugin extends Plugin {
 			});
 
 			if (!result.canceled && result.filePaths.length > 0) {
+				// All files selected in a single dialog session live in the
+				// same parent directory, so remembering the dirname of the
+				// first one is enough.
+				this.lastPickedFolders[selectedDirectoryId] = path.dirname(result.filePaths[0]);
+
 				result.filePaths.forEach((filePath: string) => {
 					console.log("filePath", filePath);
 					try {
