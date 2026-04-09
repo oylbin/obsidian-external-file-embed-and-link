@@ -2,7 +2,11 @@
 
 All notable changes to the External File Embed and Link plugin will be documented in this file.
 
-## [Unreleased]
+## [1.5.8]
+
+### Fixed
+
+- Inline links (`<a class="LinkRelativeTo" href="#dirId://path">`) are now clickable in Live Preview mode, not only in Reading mode. Clicking opens the target file with the system default program, matching Reading-mode behavior. Broken links surface the same error Notice in both modes.
 
 ### Changed (DevOps)
 

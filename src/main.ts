@@ -113,6 +113,25 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		this.registerMarkdownPostProcessor((element, context) => {
 			this.linkProcessor.processInlineLink(element, context);
 		});
+
+		// Document-level delegated click handler for `.LinkRelativeTo` inline
+		// links. Markdown post-processors do not run in Live Preview (CM6), so
+		// without this listener inline links are dead clicks in that mode.
+		// Registering on `document` in the capture phase guarantees we run
+		// before Obsidian's own hash-link handling, which would otherwise
+		// either swallow the click or attempt an in-document anchor jump.
+		// `registerDomEvent` ensures the listener is removed on plugin unload.
+		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
+			const target = evt.target as HTMLElement | null;
+			if (!target) return;
+			const anchor = target.closest('a.LinkRelativeTo') as HTMLAnchorElement | null;
+			if (!anchor) return;
+
+			evt.preventDefault();
+			evt.stopPropagation();
+
+			this.linkProcessor.handleInlineLinkClick(anchor);
+		}, { capture: true });
 	}
 	// Returns the path that should be passed as `defaultPath` to the file
 	// picker for the given virtual directory. Falls back to the virtual
