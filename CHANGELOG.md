@@ -2,6 +2,25 @@
 
 All notable changes to the External File Embed and Link plugin will be documented in this file.
 
+## [Unreleased]
+
+### Changed (DevOps)
+
+- Standardized DevOps workflow: introduced a new `Makefile` + `dev.sh` following the
+  "standardized entry, scripted logic" philosophy. All `lint` / `build` / `test` /
+  `clean` operations now run inside a `node:18-alpine` container managed by
+  `docker-compose.yml`. Host only needs Docker.
+- Added `make` targets: `help`, `doctor`, `deps`, `lint`, `build`, `clean`, `test`,
+  `up`, `down`, `restart`, `status`, `logs`, `shell`, `artifacts`, `install`, `release`.
+- `make install` is the only host-side target — it copies build artifacts to the
+  Obsidian plugin directory configured by `VAULT_PLUGIN_DIR` in `.env`.
+- `esbuild.config.mjs` no longer auto-copies build outputs to a test vault.
+  The `dotenv` runtime dependency has been removed.
+- **Migration**: rename `TEST_VAULT_PLUGIN_DIR` in your local `.env` to
+  `VAULT_PLUGIN_DIR`, and point it to your real Obsidian plugin folder. See
+  `.env.example` for the template. The old `make install` / `make download`
+  targets have been replaced by the new standardized targets.
+
 ## [1.5.6]
 
 - Add include/exclude options for embed folder [#14](https://github.com/oylbin/obsidian-external-file-embed-and-link/issues/14)

@@ -136,6 +136,79 @@ Both commands will automatically generate the appropriate code with the correct 
 
 ![commands](docs/assets/commands.png)
 
+## Development
+
+This project follows a containerized DevOps workflow. The host machine only needs **Docker** (with Docker Compose v2) and **bash**; Node.js is **not** required on the host.
+
+The Makefile is the single entry point and forwards every command to `dev.sh`, which executes the actual logic inside a `node:18-alpine` container.
+
+### Prerequisites
+
+- Docker Desktop (or Docker Engine) with Docker Compose v2
+- bash (Git Bash or WSL on Windows)
+
+### Quick Start
+
+```bash
+# 1. Configure your local plugin directory
+cp .env.example .env
+# Edit .env and set VAULT_PLUGIN_DIR to your Obsidian plugin folder, e.g.
+#   VAULT_PLUGIN_DIR=~/SynologyDrive/AppDataSync/obsidian/.obsidian/plugins/external-file-embed-and-link
+
+# 2. Verify your environment
+make doctor
+
+# 3. Start the dev container (runs esbuild in watch mode in the background)
+make up
+make logs        # follow esbuild output
+
+# 4. Build a production bundle
+make build
+
+# 5. Deploy to your Obsidian vault
+make install     # host-side cp main.js / styles.css / manifest.json -> $VAULT_PLUGIN_DIR
+
+# 6. Stop the dev container
+make down
+```
+
+### Available Targets
+
+Run `make help` to see them all. Key targets:
+
+| Target          | Description                                                       |
+| --------------- | ----------------------------------------------------------------- |
+| `make help`     | Show all available targets                                        |
+| `make doctor`   | Check Docker / Docker Compose / `.env` configuration              |
+| `make deps`     | Install npm dependencies inside the container                     |
+| `make lint`     | Run ESLint inside the container                                   |
+| `make build`    | Build the plugin (production mode) inside the container           |
+| `make clean`    | Remove `main.js`                                                  |
+| `make test`     | Run Jest unit tests inside the container                          |
+| `make up`       | Start the dev container (esbuild watch in background)             |
+| `make down`     | Stop the dev container                                            |
+| `make restart`  | Restart the dev container                                         |
+| `make status`   | Show container status                                             |
+| `make logs`     | Tail dev container logs                                           |
+| `make shell`    | Open a shell inside the dev container                             |
+| `make artifacts`| List build artifacts (`main.js`, `styles.css`, `manifest.json`)   |
+| `make install`  | **Host-side**: copy artifacts to `$VAULT_PLUGIN_DIR`              |
+| `make release`  | Bump version and tag (`make release VERSION=x.y.z`)               |
+
+### Notes
+
+- `node_modules` is stored in a Docker named volume to avoid host/container binary
+  mismatches (notably for esbuild's native binaries on Windows). It is **not**
+  visible on the host filesystem; if you want IDE intellisense, you can run
+  `npm install` on the host independently — this is optional and outside the
+  containerized workflow.
+- `make install` is the only target that runs on the host. It simply executes
+  `cp` and requires nothing beyond bash.
+- `make release VERSION=x.y.z` bumps the version (inside the container, via
+  `npm version --no-git-tag-version`), commits the bump on the host, creates a
+  git tag locally, and prints the push instructions. The existing GitHub Actions
+  workflow on tag push handles the actual release.
+
 ## Acknowledgement and License Notice
 
 This project uses [PDF.js](https://github.com/mozilla/pdf.js) for PDF rendering, which is made available under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). A copy of the PDF.js license can be found in the `LICENSE` file of the PDF.js repository. 

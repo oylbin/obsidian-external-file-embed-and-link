@@ -2,14 +2,6 @@ import esbuild from "esbuild";
 import inlineImportPlugin from "esbuild-plugin-inline-import";
 import process from "process";
 import builtins from "builtin-modules";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import os from "os";
-import dotenv from "dotenv";
-
-// Load .env file
-dotenv.config();
 
 const banner =
 `/*
@@ -19,60 +11,6 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === "production");
-
-const pathSep = os.platform() === "win32" ? "\\" : "/";
-// Get the test vault plugin directory path from .env file
-// If the environment variable doesn't exist, use the default path
-const testVaultPluginDir = process.env.TEST_VAULT_PLUGIN_DIR
-	? process.env.TEST_VAULT_PLUGIN_DIR.replace(/^~/, os.homedir()).replace(/\//g, pathSep)
-	: "";
-
-// Function to copy files to the test vault
-const copyToTestVault = (srcFile, destDir) => {
-	if (!fs.existsSync(destDir)) {
-		console.log(`Target directory does not exist: ${destDir}`);
-		return;
-	}
-	
-	const fileName = path.basename(srcFile);
-	const destFile = path.join(destDir, fileName);
-	
-	try {
-		fs.copyFileSync(srcFile, destFile);
-		console.log(`Copied ${fileName} to ${destDir}`);
-	} catch (err) {
-		console.error(`Failed to copy file: ${err}`);
-	}
-};
-
-// Watch for CSS file changes
-const watchCssFile = () => {
-	const cssFile = path.resolve("styles.css");
-	if (fs.existsSync(cssFile)) {
-		fs.watchFile(cssFile, { interval: 100 }, () => {
-			console.log("styles.css has been modified");
-			if(testVaultPluginDir.length > 0) {
-				copyToTestVault(cssFile, testVaultPluginDir);
-			}
-		});
-		console.log("Watching for changes in styles.css");
-	}
-};
-
-// Create a plugin to handle file copying after each build
-const copyFilesPlugin = {
-	name: 'copy-files-plugin',
-	setup(build) {
-		build.onEnd(result => {
-			if (result.errors.length === 0) {
-				const mainJsFile = path.resolve("main.js");
-				if(testVaultPluginDir.length > 0) {
-					copyToTestVault(mainJsFile, testVaultPluginDir);
-				}
-			}
-		});
-	},
-};
 
 const context = await esbuild.context({
 	banner: {
@@ -108,8 +46,6 @@ const context = await esbuild.context({
 			filter: /^inline:/,
 			transform: (content) => content
 		}),
-		// Add the custom plugin to copy files after build
-		copyFilesPlugin
 	],
 	minify: prod,
 });
@@ -119,10 +55,4 @@ if (prod) {
 	process.exit(0);
 } else {
 	await context.watch();
-	
-	// Watch for CSS file changes
-	watchCssFile();
-	if(testVaultPluginDir.length > 0) {
-		console.log(`Development mode: Files will be automatically copied to test vault directory [${testVaultPluginDir}]`);
-	}
 }

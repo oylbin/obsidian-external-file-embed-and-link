@@ -1,0 +1,34 @@
+# -----------------------------------------------------------------------------
+# 开发环境容器编排
+#
+# - 使用官方 node:18-alpine（与 GitHub Actions Node 18 对齐）
+# - bind mount 项目到 /workspace
+# - node_modules 用 named volume，避免 host/container 平台二进制冲突
+# - 启动时自动安装 git（release 时可用）+ npm 依赖，然后进入 esbuild watch
+# -----------------------------------------------------------------------------
+
+services:
+  app:
+    image: node:18-alpine
+    container_name: obsidian-external-file-embed-and-link-dev
+    working_dir: /workspace
+    init: true
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./:/workspace
+      - node_modules:/workspace/node_modules
+    command:
+      - sh
+      - -c
+      - |
+        apk add --no-cache git >/dev/null 2>&1 || true
+        if [ ! -d node_modules/.bin ]; then
+          echo "[compose] Installing npm dependencies..."
+          npm install
+        fi
+        echo "[compose] Starting esbuild watch..."
+        exec npm run dev
+
+volumes:
+  node_modules:

@@ -1,0 +1,13 @@
+# 不需要发送给 docker daemon 的文件 / 目录
+.git
+.github
+.idea
+.vscode
+.cursor
+node_modules
+main.js
+*.map
+.env
+.env.local
+.DS_Store
+docs/assets
