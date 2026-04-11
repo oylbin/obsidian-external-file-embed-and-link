@@ -3,7 +3,7 @@ import * as path from 'path';
 import { getRelativePath, openFileWithDefaultProgram } from './utils';
 import { CrossComputerLinkPluginSettings, DEFAULT_SETTINGS, CrossComputerLinkSettingTab } from './settings';
 import { VirtualDirectoryManagerImpl } from './VirtualDirectoryManager';
-import { getLocalMachineId } from './local-settings';
+import { getLocalMachineId, loadLocalSettings, saveLocalSettings } from './local-settings';
 // @ts-ignore
 import { remote } from 'electron';
 import { existsSync } from 'fs';
@@ -21,7 +21,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 	private embedProcessor: EmbedProcessor;
 	private linkProcessor: LinkProcessor;
 	// Remembers the last folder the user picked a file from, keyed by virtual
-	// directory id. Session-only: cleared on plugin reload / Obsidian restart.
+	// directory id. Persisted to device-local settings so it survives restarts.
 	private lastPickedFolders: Record<string, string> = {};
 
 	insertText(editor: Editor, text: string) {
@@ -47,6 +47,8 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		await this.httpServer.start();
 
 		const localMachineId = await getLocalMachineId(this.manifest.id);
+		const localSettings = await loadLocalSettings(this.manifest.id);
+		this.lastPickedFolders = localSettings.lastPickedFolders ?? {};
 		this.context.directoryConfigManager = new VirtualDirectoryManagerImpl(this, localMachineId);
 		this.addSettingTab(new CrossComputerLinkSettingTab(this.app, this, this.context.directoryConfigManager, localMachineId));
 
@@ -165,6 +167,16 @@ export default class CrossComputerLinkPlugin extends Plugin {
 		return normalizedRemembered;
 	}
 
+	private async persistLastPickedFolders(): Promise<void> {
+		try {
+			const localSettings = await loadLocalSettings(this.manifest.id);
+			localSettings.lastPickedFolders = this.lastPickedFolders;
+			await saveLocalSettings(this.manifest.id, localSettings);
+		} catch (e) {
+			console.error('Failed to persist lastPickedFolders', e);
+		}
+	}
+
 	private async selectFileAndCreateCode(editor: Editor,
 		createCodeFn: (directoryId: string, filePath: string) => string) {
 		const localDirectories = this.context.directoryConfigManager.getAllLocalDirectories();
@@ -198,6 +210,7 @@ export default class CrossComputerLinkPlugin extends Plugin {
 				// same parent directory, so remembering the dirname of the
 				// first one is enough.
 				this.lastPickedFolders[selectedDirectoryId] = path.dirname(result.filePaths[0]);
+				this.persistLastPickedFolders();
 
 				result.filePaths.forEach((filePath: string) => {
 					console.log("filePath", filePath);
