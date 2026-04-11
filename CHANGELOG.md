@@ -2,6 +2,12 @@
 
 All notable changes to the External File Embed and Link plugin will be documented in this file.
 
+## [1.5.9]
+
+### Enhanced
+
+- The remembered last-picked folder per virtual directory is now persisted to device-local storage, so it survives Obsidian restarts. Each device maintains its own memory independently (not synced).
+
 ## [1.5.8]
 
 ### Fixed
